@@ -1,0 +1,6 @@
+tongue_dataset/
+logs/
+__pycache__/
+.idea/
+.DS_Store
+participants.txt
