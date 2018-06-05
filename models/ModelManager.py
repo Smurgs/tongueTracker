@@ -101,7 +101,6 @@ class ModelManager(object):
         devices = ['/gpu:%d' % x for x in range(len(devices))]
         if len(devices) < 1:
             devices.append('/cpu:0')
-            devices.append('/cpu:0')
         print('Devices found: ' + str(devices))
 
         # Build model on each available device
