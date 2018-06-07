@@ -142,9 +142,8 @@ class ModelManager(object):
         # Overall train op
         global_step = tf.train.create_global_step()
         optimizer.apply_gradients(average_gradients, global_step=global_step, name='train')
-
-        print('Initializing variables')
         self.sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
+        assign_variable_values()
 
         # Setup Tensorboard summary writers
         with tf.name_scope('summaries'):

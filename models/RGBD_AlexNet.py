@@ -1,6 +1,10 @@
 import tensorflow as tf
 
 
+def assign_variable_values():
+    pass
+
+
 def get_model_name():
     return 'RGBD_AlexNet'
 
@@ -75,3 +79,4 @@ def build_model(rgb_x, depth_x, y, reuse=False):
             tf.summary.histogram('conv4B', conv4B)
             tf.summary.histogram('conv5W', conv5W)
             tf.summary.histogram('conv5B', conv5B)
+
