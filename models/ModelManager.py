@@ -3,7 +3,7 @@ import shutil
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 
-from models.RGBD_AlexNet import *
+from models.RGBD_AlexNet_Pretrained import *
 
 
 class ModelManager(object):
@@ -143,7 +143,7 @@ class ModelManager(object):
         global_step = tf.train.create_global_step()
         optimizer.apply_gradients(average_gradients, global_step=global_step, name='train')
         self.sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
-        assign_variable_values()
+        assign_variable_values(self.sess)
 
         # Setup Tensorboard summary writers
         with tf.name_scope('summaries'):
@@ -172,7 +172,7 @@ class ModelManager(object):
         print('Saved model: %s' % save_path)
 
         # Delete oldest save if max number of saves reached
-        if len(saves) > self.max_saves:
+        if len(saves) >= self.max_saves:
             saves = [(x, int(x.split('-')[-1])) for x in saves]
             saves.sort(key=lambda tup: tup[1])
             shutil.rmtree("%s%s/%s" % (self.save_dir, get_model_name(), saves[0][0]))

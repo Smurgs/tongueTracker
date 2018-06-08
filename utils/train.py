@@ -6,6 +6,7 @@ from models.ModelManager import ModelManager
 import tensorflow as tf
 import numpy as np
 
+epochs = 10
 batch_size = 32
 dataset_parent_dir = '/scratch/smurga/'
 dataset_dir = '/scratch/smurga/tongue_dataset/scaled/'
@@ -50,7 +51,6 @@ def train():
     val_summary_writer = tf.summary.FileWriter('logs/' + model_manager.model_name() + '/events/validation/', sess.graph)
 
     # Train for a bunch of epochs
-    epochs = 200
     print('Training model for %d epochs' % epochs)
     epoch_times = []
     for epoch in range(epochs):
@@ -148,4 +148,4 @@ def inference():
 
 
 if __name__ == '__main__':
-    run_test()
+    train()
