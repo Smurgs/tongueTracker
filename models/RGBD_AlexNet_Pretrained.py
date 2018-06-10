@@ -4,88 +4,13 @@ import tensorflow as tf
 
 
 def assign_variable_values(sess):
-    # Load pretrained variables
-    f = h5py.File('models/alexnet_weights.h5', 'r')
 
     with tf.variable_scope(tf.get_variable_scope(), reuse=True):
-        # Conv1
-        conv1W_tensor = tf.get_variable('model/conv_variables/conv1W')
-        conv1W_values = sess.run(conv1W_tensor)
-        conv1W_values[:, :, :3, :] = np.transpose(np.array(f['conv_1']['conv_1_W']))
-        conv1W_tensor.load(conv1W_values, session=sess)
-        conv1B_tensor = tf.get_variable('model/conv_variables/conv1B')
-        conv1B_tensor.load(np.array(f['conv_1']['conv_1_b']), session=sess)
-
-        # Conv2
-        conv2W_tensor = tf.get_variable('model/conv_variables/conv2W')
-        conv2W_values = np.concatenate(
-            [
-                np.concatenate(
-                    [np.transpose(np.array(f['conv_2_1']['conv_2_1_W'])),
-                     np.transpose(np.array(f['conv_2_1']['conv_2_1_W']))], axis=2),
-                np.concatenate(
-                    [np.transpose(np.array(f['conv_2_2']['conv_2_2_W'])),
-                     np.transpose(np.array(f['conv_2_2']['conv_2_2_W']))], axis=2)
-            ], axis=3)
-        conv2W_tensor.load(conv2W_values, session=sess)
-        conv2B_tensor = tf.get_variable('model/conv_variables/conv2B')
-        conv2B_values = np.concatenate([np.array(f['conv_2_1']['conv_2_1_b']), np.array(f['conv_2_2']['conv_2_2_b'])])
-        conv2B_tensor.load(conv2B_values, session=sess)
-
-        # Conv3
-        conv3W_tensor = tf.get_variable('model/conv_variables/conv3W')
-        conv3W_values = np.transpose(np.array(f['conv_3']['conv_3_W']))
-        conv3W_tensor.load(conv3W_values, session=sess)
-        conv3B_tensor = tf.get_variable('model/conv_variables/conv3B')
-        conv3B_tensor.load(np.array(f['conv_3']['conv_3_b']), session=sess)
-
-        # Conv4
-        conv4W_tensor = tf.get_variable('model/conv_variables/conv4W')
-        conv4W_values = np.concatenate(
-            [
-                np.concatenate(
-                    [np.transpose(np.array(f['conv_4_1']['conv_4_1_W'])),
-                     np.transpose(np.array(f['conv_4_1']['conv_4_1_W']))], axis=2),
-                np.concatenate(
-                    [np.transpose(np.array(f['conv_4_2']['conv_4_2_W'])),
-                     np.transpose(np.array(f['conv_4_2']['conv_4_2_W']))], axis=2)
-            ], axis=3)
-        conv4W_tensor.load(conv4W_values, session=sess)
-        conv4B_tensor = tf.get_variable('model/conv_variables/conv4B')
-        conv4B_values = np.concatenate([np.array(f['conv_4_1']['conv_4_1_b']), np.array(f['conv_4_2']['conv_4_2_b'])])
-        conv4B_tensor.load(conv4B_values, session=sess)
-
-        # Conv5
-        conv5W_tensor = tf.get_variable('model/conv_variables/conv5W')
-        conv5W_values = np.concatenate(
-            [
-                np.concatenate(
-                    [np.transpose(np.array(f['conv_5_1']['conv_5_1_W'])),
-                     np.transpose(np.array(f['conv_5_1']['conv_5_1_W']))], axis=2),
-                np.concatenate(
-                    [np.transpose(np.array(f['conv_5_2']['conv_5_2_W'])),
-                     np.transpose(np.array(f['conv_5_2']['conv_5_2_W']))], axis=2)
-            ], axis=3)
-        conv5W_tensor.load(conv5W_values, session=sess)
-        conv5B_tensor = tf.get_variable('model/conv_variables/conv5B')
-        conv5B_values = np.concatenate([np.array(f['conv_5_1']['conv_5_1_b']), np.array(f['conv_5_2']['conv_5_2_b'])])
-        conv5B_tensor.load(conv5B_values, session=sess)
-
-        # Fc1
-        fc1W_tensor = tf.get_variable('model/fc1/weights')
-        fc1W_tensor.load(np.array(f['dense_1']['dense_1_W']), session=sess)
-        fc1B_tensor = tf.get_variable('model/fc1/biases')
-        fc1B_tensor.load(np.array(f['dense_1']['dense_1_b']), session=sess)
-
-        # Fc2
-        fc2W_tensor = tf.get_variable('model/fc2/weights')
-        fc2W_tensor.load(np.array(f['dense_2']['dense_2_W']), session=sess)
-        fc2B_tensor = tf.get_variable('model/fc2/biases')
-        fc2B_tensor.load(np.array(f['dense_2']['dense_2_b']), session=sess)
+        pass
 
 
 def get_model_name():
-    return 'RGBD_AlexNet_Pretrained'
+    return 'RGBD_AlexNet_Pretrained_2'
 
 
 def build_model(rgb_x, depth_x, y, reuse=False):
@@ -93,20 +18,68 @@ def build_model(rgb_x, depth_x, y, reuse=False):
     # Combine rgb and depth data
     x = tf.concat([rgb_x, depth_x], axis=-1)
 
+    # Load pretrained variables
+    f = h5py.File('models/alexnet_weights.h5', 'r')
+
     # Create variables
     with tf.variable_scope('model'):
         with tf.variable_scope('conv_variables'):
             with tf.device('/cpu:0'):
-                conv1W = tf.get_variable('conv1W', shape=[11, 11, 4, 96], initializer=tf.contrib.layers.xavier_initializer())
-                conv1B = tf.get_variable('conv1B', shape=[96], initializer=tf.zeros_initializer())
-                conv2W = tf.get_variable('conv2W', shape=[5, 5, 96, 256], initializer=tf.contrib.layers.xavier_initializer())
-                conv2B = tf.get_variable('conv2B', shape=[256], initializer=tf.zeros_initializer())
-                conv3W = tf.get_variable('conv3W', shape=[3, 3, 256, 384], initializer=tf.contrib.layers.xavier_initializer())
-                conv3B = tf.get_variable('conv3B', shape=[384], initializer=tf.zeros_initializer())
-                conv4W = tf.get_variable('conv4W', shape=[3, 3, 384, 384], initializer=tf.contrib.layers.xavier_initializer())
-                conv4B = tf.get_variable('conv4B', shape=[384], initializer=tf.zeros_initializer())
-                conv5W = tf.get_variable('conv5W', shape=[3, 3, 384, 256], initializer=tf.contrib.layers.xavier_initializer())
-                conv5B = tf.get_variable('conv5B', shape=[256], initializer=tf.zeros_initializer())
+                # Conv1
+                conv1W_values = np.transpose(np.array(f['conv_1']['conv_1_W']))
+                conv1Wa = tf.get_variable('conv1Wa', initializer=tf.constant(conv1W_values))
+                conv1Wb = tf.get_variable('conv1Wb', shape=[11, 11, 1, 96], initializer=tf.contrib.layers.xavier_initializer())
+                conv1W = tf.concat([conv1Wa, conv1Wb], axis=2)
+                conv1B_values = np.array(f['conv_1']['conv_1_b'])
+                conv1B = tf.get_variable('conv1B', initializer=tf.constant(conv1B_values))
+
+                # Conv2
+                conv2W_values = np.concatenate(
+                    [
+                        np.concatenate(
+                            [np.transpose(np.array(f['conv_2_1']['conv_2_1_W'])),
+                             np.transpose(np.array(f['conv_2_1']['conv_2_1_W']))], axis=2),
+                        np.concatenate(
+                            [np.transpose(np.array(f['conv_2_2']['conv_2_2_W'])),
+                             np.transpose(np.array(f['conv_2_2']['conv_2_2_W']))], axis=2)
+                    ], axis=3)
+                conv2W = tf.get_variable('conv2W', initializer=tf.constant(conv2W_values))
+                conv2B_values = np.concatenate([np.array(f['conv_2_1']['conv_2_1_b']), np.array(f['conv_2_2']['conv_2_2_b'])])
+                conv2B = tf.get_variable('conv2B', initializer=tf.constant(conv2B_values))
+
+                # Conv3
+                conv3W_values = np.transpose(np.array(f['conv_3']['conv_3_W']))
+                conv3W = tf.get_variable('conv3W', initializer=tf.constant(conv3W_values))
+                conv3B_values = np.array(f['conv_3']['conv_3_b'])
+                conv3B = tf.get_variable('conv3B', initializer=tf.constant(conv3B_values))
+
+                # Conv4
+                conv4W_values = np.concatenate(
+                    [
+                        np.concatenate(
+                            [np.transpose(np.array(f['conv_4_1']['conv_4_1_W'])),
+                             np.transpose(np.array(f['conv_4_1']['conv_4_1_W']))], axis=2),
+                        np.concatenate(
+                            [np.transpose(np.array(f['conv_4_2']['conv_4_2_W'])),
+                             np.transpose(np.array(f['conv_4_2']['conv_4_2_W']))], axis=2)
+                    ], axis=3)
+                conv4W = tf.get_variable('conv4W', initializer=tf.constant(conv4W_values))
+                conv4B_values = np.concatenate([np.array(f['conv_4_1']['conv_4_1_b']), np.array(f['conv_4_2']['conv_4_2_b'])])
+                conv4B = tf.get_variable('conv4B', initializer=tf.constant(conv4B_values))
+
+                # Conv5
+                conv5W_values = np.concatenate(
+                    [
+                        np.concatenate(
+                            [np.transpose(np.array(f['conv_5_1']['conv_5_1_W'])),
+                             np.transpose(np.array(f['conv_5_1']['conv_5_1_W']))], axis=2),
+                        np.concatenate(
+                            [np.transpose(np.array(f['conv_5_2']['conv_5_2_W'])),
+                             np.transpose(np.array(f['conv_5_2']['conv_5_2_W']))], axis=2)
+                    ], axis=3)
+                conv5W = tf.get_variable('conv5W', initializer=tf.constant(conv5W_values))
+                conv5B_values = np.concatenate([np.array(f['conv_5_1']['conv_5_1_b']), np.array(f['conv_5_2']['conv_5_2_b'])])
+                conv5B = tf.get_variable('conv5B', initializer=tf.constant(conv5B_values))
 
         # Build graph
         with tf.variable_scope('conv1'):
@@ -125,11 +98,27 @@ def build_model(rgb_x, depth_x, y, reuse=False):
             model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_out, conv5W, [1, 1, 1, 1], 'SAME'), conv5B))
         with tf.variable_scope('max_pool3'):
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
+
+        # Flatten
         model_out = tf.contrib.layers.flatten(model_out)
+
+        # Dropout
         model_out = tf.nn.dropout(model_out, 0.5)
-        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc1')
+
+        # Fc1
+        fc1W = tf.get_variable('fc1/weights', initializer=tf.constant(np.array(f['dense_1']['dense_1_W'])))
+        fc1B = tf.get_variable('fc1/biases', initializer=tf.constant(np.array(f['dense_1']['dense_1_b'])))
+        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=True, scope='fc1')
+
+        # Dropout
         model_out = tf.nn.dropout(model_out, 0.5)
-        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc2')
+
+        # Fc2
+        fc2W = tf.get_variable('fc2/weights', initializer=tf.constant(np.array(f['dense_2']['dense_2_W'])))
+        fc2B = tf.get_variable('fc2/biases', initializer=tf.constant(np.array(f['dense_2']['dense_2_b'])))
+        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=True, scope='fc2')
+
+        # Fc3
         model_out = tf.contrib.layers.fully_connected(model_out, 7, reuse=reuse, scope='fc3', activation_fn=None)
 
     # Inference
@@ -148,14 +137,21 @@ def build_model(rgb_x, depth_x, y, reuse=False):
     # Tensorboard
     if reuse is False:
         with tf.name_scope('summaries'):
-            tf.summary.histogram('conv1W', conv1W)
-            tf.summary.histogram('conv1B', conv1B)
-            tf.summary.histogram('conv2W', conv2W)
-            tf.summary.histogram('conv2B', conv2B)
-            tf.summary.histogram('conv3W', conv3W)
-            tf.summary.histogram('conv3B', conv3B)
-            tf.summary.histogram('conv4W', conv4W)
-            tf.summary.histogram('conv4B', conv4B)
-            tf.summary.histogram('conv5W', conv5W)
-            tf.summary.histogram('conv5B', conv5B)
+            with tf.variable_scope(tf.get_variable_scope(), reuse=True):
+                tf.summary.histogram('conv1W', conv1W)
+                tf.summary.histogram('conv1B', conv1B)
+                tf.summary.histogram('conv2W', conv2W)
+                tf.summary.histogram('conv2B', conv2B)
+                tf.summary.histogram('conv3W', conv3W)
+                tf.summary.histogram('conv3B', conv3B)
+                tf.summary.histogram('conv4W', conv4W)
+                tf.summary.histogram('conv4B', conv4B)
+                tf.summary.histogram('conv5W', conv5W)
+                tf.summary.histogram('conv5B', conv5B)
+                tf.summary.histogram('fc1/weights', fc1W)
+                tf.summary.histogram('fc1/biases', fc1B)
+                tf.summary.histogram('fc2/weights', fc2W)
+                tf.summary.histogram('fc2/biases', fc2B)
+                tf.summary.histogram('fc3/weights', tf.get_variable('model/fc3/weights'))
+                tf.summary.histogram('fc3/biases', tf.get_variable('model/fc3/biases'))
 
