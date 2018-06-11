@@ -6,7 +6,7 @@ from models.ModelManager import ModelManager
 import tensorflow as tf
 import numpy as np
 
-epochs = 10
+epochs = 200
 batch_size = 32
 dataset_parent_dir = '/scratch/smurga/'
 dataset_dir = '/scratch/smurga/tongue_dataset/scaled/'

@@ -106,16 +106,16 @@ def build_model(rgb_x, depth_x, y, reuse=False):
         model_out = tf.nn.dropout(model_out, 0.5)
 
         # Fc1
-        fc1W = tf.get_variable('fc1/weights', initializer=tf.constant(np.array(f['dense_1']['dense_1_W'])))
-        fc1B = tf.get_variable('fc1/biases', initializer=tf.constant(np.array(f['dense_1']['dense_1_b'])))
+        tf.get_variable('fc1/weights', initializer=tf.constant(np.array(f['dense_1']['dense_1_W'])))
+        tf.get_variable('fc1/biases', initializer=tf.constant(np.array(f['dense_1']['dense_1_b'])))
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=True, scope='fc1')
 
         # Dropout
         model_out = tf.nn.dropout(model_out, 0.5)
 
         # Fc2
-        fc2W = tf.get_variable('fc2/weights', initializer=tf.constant(np.array(f['dense_2']['dense_2_W'])))
-        fc2B = tf.get_variable('fc2/biases', initializer=tf.constant(np.array(f['dense_2']['dense_2_b'])))
+        tf.get_variable('fc2/weights', initializer=tf.constant(np.array(f['dense_2']['dense_2_W'])))
+        tf.get_variable('fc2/biases', initializer=tf.constant(np.array(f['dense_2']['dense_2_b'])))
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=True, scope='fc2')
 
         # Fc3
@@ -137,21 +137,13 @@ def build_model(rgb_x, depth_x, y, reuse=False):
     # Tensorboard
     if reuse is False:
         with tf.name_scope('summaries'):
-            with tf.variable_scope(tf.get_variable_scope(), reuse=True):
-                tf.summary.histogram('conv1W', conv1W)
-                tf.summary.histogram('conv1B', conv1B)
-                tf.summary.histogram('conv2W', conv2W)
-                tf.summary.histogram('conv2B', conv2B)
-                tf.summary.histogram('conv3W', conv3W)
-                tf.summary.histogram('conv3B', conv3B)
-                tf.summary.histogram('conv4W', conv4W)
-                tf.summary.histogram('conv4B', conv4B)
-                tf.summary.histogram('conv5W', conv5W)
-                tf.summary.histogram('conv5B', conv5B)
-                tf.summary.histogram('fc1/weights', fc1W)
-                tf.summary.histogram('fc1/biases', fc1B)
-                tf.summary.histogram('fc2/weights', fc2W)
-                tf.summary.histogram('fc2/biases', fc2B)
-                tf.summary.histogram('fc3/weights', tf.get_variable('model/fc3/weights'))
-                tf.summary.histogram('fc3/biases', tf.get_variable('model/fc3/biases'))
-
+            tf.summary.histogram('conv1W', conv1W)
+            tf.summary.histogram('conv1B', conv1B)
+            tf.summary.histogram('conv2W', conv2W)
+            tf.summary.histogram('conv2B', conv2B)
+            tf.summary.histogram('conv3W', conv3W)
+            tf.summary.histogram('conv3B', conv3B)
+            tf.summary.histogram('conv4W', conv4W)
+            tf.summary.histogram('conv4B', conv4B)
+            tf.summary.histogram('conv5W', conv5W)
+            tf.summary.histogram('conv5B', conv5B)
