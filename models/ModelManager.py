@@ -3,7 +3,7 @@ import shutil
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 
-from models.RGBD_AlexNet_Pretrained import *
+from models.RGBD_AlexNet import *
 
 
 class ModelManager(object):

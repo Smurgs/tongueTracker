@@ -6,7 +6,7 @@ def assign_variable_values(sess):
 
 
 def get_model_name():
-    return 'RGB_AlexNet'
+    return 'RGB_AlexNet2'
 
 
 def build_model(rgb_x, depth_x, y, reuse=False):

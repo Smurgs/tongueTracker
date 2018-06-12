@@ -6,8 +6,8 @@ test_ratio = 0.1
 
 annotations_path = '../tongue_dataset/scaled/annotations.txt'
 
-if __name__ == '__main__':
 
+def v1():
     # Read annotations file
     with open(annotations_path) as f:
         annotations = f.readlines()
@@ -18,9 +18,9 @@ if __name__ == '__main__':
 
     # Split into train/validation/test sets
     total = len(annotations)
-    train_annotations = annotations[:int(train_ratio*total)]
-    validation_annotations = annotations[int(train_ratio*total):int((train_ratio+validation_ratio)*total)]
-    test_annotations = annotations[int((train_ratio+validation_ratio)*total):]
+    train_annotations = annotations[:int(train_ratio * total)]
+    validation_annotations = annotations[int(train_ratio * total):int((train_ratio + validation_ratio) * total)]
+    test_annotations = annotations[int((train_ratio + validation_ratio) * total):]
 
     # Write new annotation files
     for rgb, depth, state, mode in train_annotations:
@@ -37,3 +37,28 @@ if __name__ == '__main__':
         test_annotations_path = annotations_path.replace('annotations', 'test_annotations')
         with open(test_annotations_path, 'a') as f:
             f.write(rgb + ',' + depth + ',' + state + ',' + mode + '\n')
+
+
+def v2():
+    # Read annotations file
+    with open(annotations_path) as f:
+        annotations = f.readlines()
+    annotations = [x.strip().split(',') for x in annotations]
+
+    # Shuffle annotations
+    random.shuffle(annotations)
+
+    # Write new annotation files
+    train_annotations_path = annotations_path.replace('annotations', 'train_annotations2')
+    test_annotations_path = annotations_path.replace('annotations', 'test_annotations2')
+    for rgb, depth, state, mode in annotations:
+        if '/007_' in rgb or '/014_' in rgb:
+            with open(test_annotations_path, 'a') as f:
+                f.write(rgb + ',' + depth + ',' + state + ',' + mode + '\n')
+        else:
+            with open(train_annotations_path, 'a') as f:
+                f.write(rgb + ',' + depth + ',' + state + ',' + mode + '\n')
+
+
+if __name__ == '__main__':
+    v2()
