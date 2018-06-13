@@ -34,18 +34,14 @@ def build_model(rgb_x, depth_x, y, reuse=False):
                 conv1B = tf.get_variable('conv1B', initializer=tf.constant(conv1B_values))
 
                 # Conv2
-                conv2W_values = np.concatenate(
-                    [
-                        np.concatenate(
-                            [np.transpose(np.array(f['conv_2_1']['conv_2_1_W'])),
-                             np.transpose(np.array(f['conv_2_1']['conv_2_1_W']))], axis=2),
-                        np.concatenate(
-                            [np.transpose(np.array(f['conv_2_2']['conv_2_2_W'])),
-                             np.transpose(np.array(f['conv_2_2']['conv_2_2_W']))], axis=2)
-                    ], axis=3)
-                conv2W = tf.get_variable('conv2W', initializer=tf.constant(conv2W_values))
-                conv2B_values = np.concatenate([np.array(f['conv_2_1']['conv_2_1_b']), np.array(f['conv_2_2']['conv_2_2_b'])])
-                conv2B = tf.get_variable('conv2B', initializer=tf.constant(conv2B_values))
+                conv2W_1_values = np.transpose(np.array(f['conv_2_1']['conv_2_1_W']))
+                conv2W_2_values = np.transpose(np.array(f['conv_2_2']['conv_2_2_W']))
+                conv2W_1 = tf.get_variable('conv2W_1', initializer=tf.constant(conv2W_1_values))
+                conv2W_2 = tf.get_variable('conv2W_2', initializer=tf.constant(conv2W_2_values))
+                conv2B_1_values = np.array(f['conv_2_1']['conv_2_1_b'])
+                conv2B_2_values = np.array(f['conv_2_2']['conv_2_2_b'])
+                conv2B_1 = tf.get_variable('conv2B_1', initializer=tf.constant(conv2B_1_values))
+                conv2B_2 = tf.get_variable('conv2B_2', initializer=tf.constant(conv2B_2_values))
 
                 # Conv3
                 conv3W_values = np.transpose(np.array(f['conv_3']['conv_3_W']))
@@ -54,32 +50,24 @@ def build_model(rgb_x, depth_x, y, reuse=False):
                 conv3B = tf.get_variable('conv3B', initializer=tf.constant(conv3B_values))
 
                 # Conv4
-                conv4W_values = np.concatenate(
-                    [
-                        np.concatenate(
-                            [np.transpose(np.array(f['conv_4_1']['conv_4_1_W'])),
-                             np.transpose(np.array(f['conv_4_1']['conv_4_1_W']))], axis=2),
-                        np.concatenate(
-                            [np.transpose(np.array(f['conv_4_2']['conv_4_2_W'])),
-                             np.transpose(np.array(f['conv_4_2']['conv_4_2_W']))], axis=2)
-                    ], axis=3)
-                conv4W = tf.get_variable('conv4W', initializer=tf.constant(conv4W_values))
-                conv4B_values = np.concatenate([np.array(f['conv_4_1']['conv_4_1_b']), np.array(f['conv_4_2']['conv_4_2_b'])])
-                conv4B = tf.get_variable('conv4B', initializer=tf.constant(conv4B_values))
+                conv4W_1_values = np.transpose(np.array(f['conv_4_1']['conv_4_1_W']))
+                conv4W_2_values = np.transpose(np.array(f['conv_4_2']['conv_4_2_W']))
+                conv4W_1 = tf.get_variable('conv4W_1', initializer=tf.constant(conv4W_1_values))
+                conv4W_2 = tf.get_variable('conv4W_2', initializer=tf.constant(conv4W_2_values))
+                conv4B_1_values = np.array(f['conv_4_1']['conv_4_1_b'])
+                conv4B_2_values = np.array(f['conv_4_2']['conv_4_2_b'])
+                conv4B_1 = tf.get_variable('conv4B_1', initializer=tf.constant(conv4B_1_values))
+                conv4B_2 = tf.get_variable('conv4B_2', initializer=tf.constant(conv4B_2_values))
 
                 # Conv5
-                conv5W_values = np.concatenate(
-                    [
-                        np.concatenate(
-                            [np.transpose(np.array(f['conv_5_1']['conv_5_1_W'])),
-                             np.transpose(np.array(f['conv_5_1']['conv_5_1_W']))], axis=2),
-                        np.concatenate(
-                            [np.transpose(np.array(f['conv_5_2']['conv_5_2_W'])),
-                             np.transpose(np.array(f['conv_5_2']['conv_5_2_W']))], axis=2)
-                    ], axis=3)
-                conv5W = tf.get_variable('conv5W', initializer=tf.constant(conv5W_values))
-                conv5B_values = np.concatenate([np.array(f['conv_5_1']['conv_5_1_b']), np.array(f['conv_5_2']['conv_5_2_b'])])
-                conv5B = tf.get_variable('conv5B', initializer=tf.constant(conv5B_values))
+                conv5W_1_values = np.transpose(np.array(f['conv_5_1']['conv_5_1_W']))
+                conv5W_2_values = np.transpose(np.array(f['conv_5_2']['conv_5_2_W']))
+                conv5W_1 = tf.get_variable('conv5W_1', initializer=tf.constant(conv5W_1_values))
+                conv5W_2 = tf.get_variable('conv5W_2', initializer=tf.constant(conv5W_2_values))
+                conv5B_1_values = np.array(f['conv_5_1']['conv_5_1_b'])
+                conv5B_2_values = np.array(f['conv_5_2']['conv_5_2_b'])
+                conv5B_1 = tf.get_variable('conv5B_1', initializer=tf.constant(conv5B_1_values))
+                conv5B_2 = tf.get_variable('conv5B_2', initializer=tf.constant(conv5B_2_values))
 
         # Build graph
         with tf.variable_scope('conv1'):
@@ -87,16 +75,23 @@ def build_model(rgb_x, depth_x, y, reuse=False):
         with tf.variable_scope('max_pool1'):
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
         with tf.variable_scope('conv2'):
-            model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_out, conv2W, [1, 1, 1, 1], 'SAME'), conv2B))
+            model_1, model_2 = tf.split(model_out, 2, axis=-1)
+            model_1 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_1, conv2W_1, [1, 1, 1, 1], 'SAME'), conv2B_1))
+            model_2 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_2, conv2W_2, [1, 1, 1, 1], 'SAME'), conv2B_2))
         with tf.variable_scope('max_pool2'):
+            model_out = tf.concat([model_1, model_2], axis=-1)
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
         with tf.variable_scope('conv3'):
             model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_out, conv3W, [1, 1, 1, 1], 'SAME'), conv3B))
         with tf.variable_scope('conv4'):
-            model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_out, conv4W, [1, 1, 1, 1], 'SAME'), conv4B))
+            model_1, model_2 = tf.split(model_out, 2, axis=-1)
+            model_1 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_1, conv4W_1, [1, 1, 1, 1], 'SAME'), conv4B_1))
+            model_2 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_2, conv4W_2, [1, 1, 1, 1], 'SAME'), conv4B_2))
         with tf.variable_scope('conv5'):
-            model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_out, conv5W, [1, 1, 1, 1], 'SAME'), conv5B))
+            model_1 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_1, conv5W_1, [1, 1, 1, 1], 'SAME'), conv5B_1))
+            model_2 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_2, conv5W_2, [1, 1, 1, 1], 'SAME'), conv5B_2))
         with tf.variable_scope('max_pool3'):
+            model_out = tf.concat([model_1, model_2], axis=-1)
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
 
         # Flatten
@@ -139,11 +134,17 @@ def build_model(rgb_x, depth_x, y, reuse=False):
         with tf.name_scope('summaries'):
             tf.summary.histogram('conv1W', conv1W)
             tf.summary.histogram('conv1B', conv1B)
-            tf.summary.histogram('conv2W', conv2W)
-            tf.summary.histogram('conv2B', conv2B)
+            tf.summary.histogram('conv2W', conv2W_1)
+            tf.summary.histogram('conv2W', conv2W_2)
+            tf.summary.histogram('conv2B', conv2B_1)
+            tf.summary.histogram('conv2B', conv2B_2)
             tf.summary.histogram('conv3W', conv3W)
             tf.summary.histogram('conv3B', conv3B)
-            tf.summary.histogram('conv4W', conv4W)
-            tf.summary.histogram('conv4B', conv4B)
-            tf.summary.histogram('conv5W', conv5W)
-            tf.summary.histogram('conv5B', conv5B)
+            tf.summary.histogram('conv4W', conv4W_1)
+            tf.summary.histogram('conv4W', conv4W_2)
+            tf.summary.histogram('conv4B', conv4B_1)
+            tf.summary.histogram('conv4B', conv4B_2)
+            tf.summary.histogram('conv5W', conv5W_1)
+            tf.summary.histogram('conv5W', conv5W_2)
+            tf.summary.histogram('conv5B', conv5B_1)
+            tf.summary.histogram('conv5B', conv5B_2)

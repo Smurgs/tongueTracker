@@ -131,8 +131,12 @@ class ModelManager(object):
             for grad_and_vars in zip(*grads):
                 grads = []
                 for g, _ in grad_and_vars:
+                    if g is None:
+                        continue
                     expanded_g = tf.expand_dims(g, 0)
                     grads.append(expanded_g)
+                if len(grads) == 0:
+                    continue
                 grad = tf.concat(axis=0, values=grads)
                 grad = tf.reduce_mean(grad, 0)
                 v = grad_and_vars[0][1]

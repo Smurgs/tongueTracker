@@ -50,10 +50,14 @@ def v2():
 
     # Write new annotation files
     train_annotations_path = annotations_path.replace('annotations', 'train_annotations2')
+    val_annotations_path = annotations_path.replace('annotations', 'val_annotations2')
     test_annotations_path = annotations_path.replace('annotations', 'test_annotations2')
     for rgb, depth, state, mode in annotations:
-        if '/007_' in rgb or '/014_' in rgb:
+        if '/007_' in rgb:
             with open(test_annotations_path, 'a') as f:
+                f.write(rgb + ',' + depth + ',' + state + ',' + mode + '\n')
+        elif '/014_' in rgb:
+            with open(val_annotations_path, 'a') as f:
                 f.write(rgb + ',' + depth + ',' + state + ',' + mode + '\n')
         else:
             with open(train_annotations_path, 'a') as f:
