@@ -35,7 +35,7 @@ def train():
 
     # Get train and validation dataset feeds
     train_rgb, train_depth, train_state = feed_from_annotation(dataset_dir + 'train_annotations2.txt')
-    val_rgb, val_depth, val_state = feed_from_annotation(dataset_dir + 'test_annotations2.txt')
+    val_rgb, val_depth, val_state = feed_from_annotation(dataset_dir + 'val_annotations2.txt')
 
     # Start up model
     print('Preparing model')

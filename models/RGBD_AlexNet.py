@@ -6,7 +6,7 @@ def assign_variable_values(sess):
 
 
 def get_model_name():
-    return 'RGBD_AlexNet2'
+    return 'RGBD_AlexNet2a'
 
 
 def build_model(rgb_x, depth_x, y, reuse=False):
@@ -19,15 +19,15 @@ def build_model(rgb_x, depth_x, y, reuse=False):
         with tf.variable_scope('conv_variables'):
             with tf.device('/cpu:0'):
                 conv1W = tf.get_variable('conv1W', shape=[11, 11, 4, 48], initializer=tf.contrib.layers.xavier_initializer())
-                conv1B = tf.get_variable('conv1B', shape=[96], initializer=tf.zeros_initializer())
+                conv1B = tf.get_variable('conv1B', shape=[48], initializer=tf.zeros_initializer())
                 conv2W = tf.get_variable('conv2W', shape=[5, 5, 48, 128], initializer=tf.contrib.layers.xavier_initializer())
-                conv2B = tf.get_variable('conv2B', shape=[256], initializer=tf.zeros_initializer())
-                conv3W = tf.get_variable('conv3W', shape=[3, 3, 128, 384], initializer=tf.contrib.layers.xavier_initializer())
-                conv3B = tf.get_variable('conv3B', shape=[384], initializer=tf.zeros_initializer())
+                conv2B = tf.get_variable('conv2B', shape=[128], initializer=tf.zeros_initializer())
+                conv3W = tf.get_variable('conv3W', shape=[3, 3, 128, 192], initializer=tf.contrib.layers.xavier_initializer())
+                conv3B = tf.get_variable('conv3B', shape=[192], initializer=tf.zeros_initializer())
                 conv4W = tf.get_variable('conv4W', shape=[3, 3, 192, 192], initializer=tf.contrib.layers.xavier_initializer())
-                conv4B = tf.get_variable('conv4B', shape=[384], initializer=tf.zeros_initializer())
+                conv4B = tf.get_variable('conv4B', shape=[192], initializer=tf.zeros_initializer())
                 conv5W = tf.get_variable('conv5W', shape=[3, 3, 192, 128], initializer=tf.contrib.layers.xavier_initializer())
-                conv5B = tf.get_variable('conv5B', shape=[256], initializer=tf.zeros_initializer())
+                conv5B = tf.get_variable('conv5B', shape=[128], initializer=tf.zeros_initializer())
 
         # Build graph
         with tf.variable_scope('conv1'):
