@@ -1,4 +1,6 @@
-from utils import train
+import sys
+from models.ModelManager import ModelManager
 
 if __name__ == '__main__':
-    train.train()
+    model_manager = ModelManager(sys.argv[1])
+    model_manager.train()

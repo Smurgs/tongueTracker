@@ -6,18 +6,19 @@ from models.ModelManager import ModelManager
 import tensorflow as tf
 import numpy as np
 
-epochs = 200
-batch_size = 32
-dataset_parent_dir = '/scratch/smurga/'
-dataset_dir = '/scratch/smurga/tongue_dataset/scaled/'
-states = ['mouth_closed', 'mouth_open', 'tongue_down', 'tongue_left',
-          'tongue_middle', 'tongue_right', 'tongue_up']
+epochs = 5
+batch_size = 1
+dataset_parent_dir = '/localdisk/tongueTracker/'
+dataset_size_limit = None
+dataset_dir = dataset_parent_dir + 'tongue_dataset/scaled/'
+states = ['mouth_closed', 'mouth_open', 'tongue_down', 'tongue_left', 'tongue_middle', 'tongue_right', 'tongue_up']
 
 
 def feed_from_annotation(annotation_path):
     with open(annotation_path) as f:
         annotations = f.readlines()
-    annotations = [x.strip().split(',') for x in annotations]
+    dataset_size = len(annotations) if dataset_size_limit is None else dataset_size_limit
+    annotations = [x.strip().split(',') for x in annotations[:dataset_size]]
     rgb_path, depth_path, state, _ = zip(*annotations)
     rgb_path = [dataset_parent_dir + x[3:] for x in rgb_path]
     depth_path = [dataset_parent_dir + x[3:] for x in depth_path]
@@ -47,8 +48,8 @@ def train():
     # Setup Tensorboard stuff
     print('Setting up summary writers')
     merged_summaries = tf.summary.merge_all()
-    train_summary_writer = tf.summary.FileWriter('logs/' + model_manager.model_name() + '/events/train/', sess.graph)
-    val_summary_writer = tf.summary.FileWriter('logs/' + model_manager.model_name() + '/events/validation/', sess.graph)
+    train_summary_writer = tf.summary.FileWriter('logs/' + model_manager.model_name() + '/events/train2/', sess.graph)
+    val_summary_writer = tf.summary.FileWriter('logs/' + model_manager.model_name() + '/events/validation2/', sess.graph)
 
     # Train for a bunch of epochs
     print('Training model for %d epochs' % epochs)
@@ -113,11 +114,6 @@ def check_accuarcy(dataset_annotation):
             break
 
     print('Dataset accuracy %.4f' % np.mean(accs))
-
-
-def run_validation():
-    print('Running validation')
-    check_accuarcy('validation_annotations.txt')
 
 
 def run_test():

@@ -9,7 +9,7 @@ def get_model_name():
     return 'RGB_AlexNet2'
 
 
-def build_model(rgb_x, depth_x, y, reuse=False):
+def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
 
     # Create variables
     with tf.variable_scope('model'):

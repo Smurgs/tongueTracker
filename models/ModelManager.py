@@ -1,59 +1,72 @@
 import os
+import json
+import time
 import shutil
+import random
+
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 
-from models.RGBD_Inception import *
+import models.RGB_AlexNet
+import models.RGBD_AlexNet
+import models.RGBD_AlexNet_Pretrained
+import models.RGBD_Inception
+
+states = ['mouth_closed', 'mouth_open', 'tongue_down', 'tongue_left', 'tongue_middle', 'tongue_right', 'tongue_up']
+
+models = {'RGB_AlexNet': models.RGB_AlexNet,
+          'RGBD_AlexNet': models.RGBD_AlexNet,
+          'RGBD_AlexNet_Pretrained': models.RGBD_AlexNet_Pretrained,
+          'RGBD_Inception': models.RGBD_Inception}
 
 
 class ModelManager(object):
 
-    def __init__(self, sess):
-        self.sess = sess
-        self.save_dir = 'logs/'
-        self.max_saves = 5
+    def __init__(self, model):
+        # Get all configs
+        self.model = models[model]
+        with open('config') as f:
+            data = json.load(f)
+        self.train_epochs = data['train_epochs']
+        self.batch_size = data['batch_size']
+        self.dataset_parent_dir = data['dataset_parent_dir']
+        self.dataset_dir = self.dataset_parent_dir + 'tongue_dataset/scaled/'
+        self.dataset_size_limit = None if 'dataset_size_limit' not in data else data['dataset_size_limit']
+        self.train_annotations = data['train_annotations']
+        self.val_annotations = data['val_annotations']
+        self.test_annotations = data['test_annotations']
+        self.save_dir = data['save_dir']
+        self.max_saves = data['max_saves']
 
-    def inference_op(self):
-        return tf.get_default_graph().get_tensor_by_name('tower_0/inference/inference:0')
+        # Prepare model
+        session_config = tf.ConfigProto(allow_soft_placement=True)
+        self.sess = tf.Session(config=session_config)
+        self.prepare_graph()
 
-    def train_op(self):
-        return tf.get_default_graph().get_tensor_by_name('train:0')
+        # Get handles to important tensors
+        self.inference_op = tf.get_default_graph().get_tensor_by_name('tower_0/inference/inference:0')
+        self.train_op = tf.get_default_graph().get_tensor_by_name('train:0')
+        self.avg_acc_op = tf.reduce_mean(tf.stack(tf.get_collection('accuracy_collection')))
+        self.inference_acc_op = tf.get_default_graph().get_tensor_by_name('tower_0/accuracy/acc:0')
+        self.avg_loss_op = tf.reduce_mean(tf.stack(tf.losses.get_losses()))
+        self.lr_ph = tf.get_default_graph().get_tensor_by_name('learning_rate:0')
+        self.add_scalar_summaries()
 
-    def avg_acc(self):
-        return tf.reduce_mean(tf.stack(tf.get_collection('accuracy_collection')))
-
-    def inference_accuracy(self):
-        return tf.get_default_graph().get_tensor_by_name('tower_0/accuracy/acc:0')
-
-    def avg_loss(self):
-        return tf.reduce_mean(tf.stack(tf.losses.get_losses()))
-
-    def learning_rate(self):
-        return tf.get_default_graph().get_tensor_by_name('learning_rate:0')
-
-    def model_name(self):
-        return get_model_name()
-
-    def dataset_init(self, rgb_paths, depth_paths, states, batch_size=32):
+    def dataset_init(self, rgb_paths, depth_paths, state_values):
         init_op = tf.get_default_graph().get_operation_by_name('dataset_init')
-        rgb_placeholder = tf.get_default_graph().get_tensor_by_name('rgb_placeholder:0')
-        depth_placeholder = tf.get_default_graph().get_tensor_by_name('depth_placeholder:0')
-        state_placeholder = tf.get_default_graph().get_tensor_by_name('state_placeholder:0')
-        batch_placeholder = tf.get_default_graph().get_tensor_by_name('batch_size_placeholder:0')
-
-        self.sess.run(init_op, feed_dict={rgb_placeholder: rgb_paths,
-                                          depth_placeholder: depth_paths,
-                                          state_placeholder: states,
-                                          batch_placeholder: batch_size})
+        rgb_ph = tf.get_default_graph().get_tensor_by_name('rgb_placeholder:0')
+        depth_ph = tf.get_default_graph().get_tensor_by_name('depth_placeholder:0')
+        state_ph = tf.get_default_graph().get_tensor_by_name('state_placeholder:0')
+        batch_ph = tf.get_default_graph().get_tensor_by_name('batch_size_placeholder:0')
+        self.sess.run(init_op, feed_dict={rgb_ph: rgb_paths, depth_ph: depth_paths, state_ph: state_values, batch_ph: self.batch_size})
 
     def create_dataset(self):
-        rgb_placeholder = tf.placeholder(tf.string, shape=[None], name='rgb_placeholder')
-        depth_placeholder = tf.placeholder(tf.string, shape=[None], name='depth_placeholder')
-        state_placeholder = tf.placeholder(tf.int32, [None], name='state_placeholder')
-        batch_size_placeholder = tf.placeholder(tf.int64, name='batch_size_placeholder')
-        dataset = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(rgb_placeholder),
-                                                      tf.convert_to_tensor(depth_placeholder),
-                                                      tf.convert_to_tensor(state_placeholder)))
+        rgb_ph = tf.placeholder(tf.string, shape=[None], name='rgb_placeholder')
+        depth_ph = tf.placeholder(tf.string, shape=[None], name='depth_placeholder')
+        state_ph = tf.placeholder(tf.int32, [None], name='state_placeholder')
+        batch_size_ph = tf.placeholder(tf.int64, name='batch_size_placeholder')
+        dataset = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(rgb_ph), tf.convert_to_tensor(depth_ph), tf.convert_to_tensor(state_ph)))
 
         def parse_function(rgb_path, depth_path, state):
             rgb_string = tf.read_file(rgb_path)
@@ -69,21 +82,21 @@ class ModelManager(object):
             label = tf.one_hot(state, 7)
             return rgb_img, depth_img, label
 
-        dataset = dataset.map(parse_function).batch(batch_size_placeholder)
+        dataset = dataset.map(parse_function).batch(batch_size_ph)
         iterator = tf.data.Iterator.from_structure(dataset.output_types, dataset.output_shapes)
         iterator.make_initializer(dataset, name='dataset_init')
         return iterator
 
     def prepare_graph(self):
         # Check for savedModel of the current model
-        if os.path.isdir(self.save_dir + get_model_name()):
+        if os.path.isdir(self.save_dir + self.model.get_model_name()):
             # Load latest save
-            saves = os.listdir("%s/%s" % (self.save_dir, get_model_name()))
+            saves = os.listdir("%s/%s" % (self.save_dir, self.model.get_model_name()))
             saves = [x for x in saves if 'events' not in x]
             if len(saves) > 0:
                 saves = [(x, int(x.split('-')[-1])) for x in saves]
                 saves.sort(key=lambda tup: tup[1])
-                latest_save = ('%s%s/%s' % (self.save_dir, get_model_name(), saves[-1][0]))
+                latest_save = ('%s%s/%s' % (self.save_dir, self.model.get_model_name(), saves[-1][0]))
                 print('Loading model: %s' % latest_save)
                 tf.saved_model.loader.load(self.sess, [tf.saved_model.tag_constants.SERVING], latest_save)
                 return
@@ -114,7 +127,7 @@ class ModelManager(object):
                         tf.identity(depth_x, name='depth_x')
 
                         # Build instance of model
-                        build_model(rgb_x, depth_x, y, x!=0)
+                        self.model.build_model(rgb_x, depth_x, y, self.batch_size, x != 0)
 
         # Average gradients from all devices
         print('Building train op')
@@ -147,17 +160,18 @@ class ModelManager(object):
         global_step = tf.train.create_global_step()
         optimizer.apply_gradients(average_gradients, global_step=global_step, name='train')
         self.sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
-        assign_variable_values(self.sess)
+        self.model.assign_variable_values(self.sess)
 
+    def add_scalar_summaries(self):
         # Setup Tensorboard summary writers
         with tf.name_scope('summaries'):
-            tf.summary.scalar('avg_loss', self.avg_loss())
-            tf.summary.scalar('avg_acc', self.avg_acc())
-            tf.summary.scalar('learning_rate', learning_rate)
+            tf.summary.scalar('avg_loss', self.avg_loss_op)
+            tf.summary.scalar('avg_acc', self.avg_acc_op)
+            tf.summary.scalar('learning_rate', self.lr_ph)
 
     def save(self):
         # Check if this iteration has already been saved
-        saves = os.listdir("%s/%s" % (self.save_dir, get_model_name()))
+        saves = os.listdir("%s/%s" % (self.save_dir, self.model.get_model_name()))
         saves = [x for x in saves if 'events' not in x]
         if len(saves) > 0:
             save_numbers = [int(x.split('-')[-1]) for x in saves]
@@ -167,10 +181,10 @@ class ModelManager(object):
         # Save model
         rgb_x = tf.get_default_graph().get_tensor_by_name('tower_0/rgb_x:0')
         depth_x = tf.get_default_graph().get_tensor_by_name('tower_0/depth_x:0')
-        inference = self.inference_op()
+        inference = self.inference_op
         save_path = "%s%s/%s-%d" % (self.save_dir,
-                                    get_model_name(),
-                                    get_model_name(),
+                                    self.model.get_model_name(),
+                                    self.model.get_model_name(),
                                     tf.train.global_step(self.sess, tf.train.get_global_step()))
         tf.saved_model.simple_save(self.sess, save_path, {'rgb_x': rgb_x, 'depth_x': depth_x}, {'inference': inference})
         print('Saved model: %s' % save_path)
@@ -179,4 +193,99 @@ class ModelManager(object):
         if len(saves) >= self.max_saves:
             saves = [(x, int(x.split('-')[-1])) for x in saves]
             saves.sort(key=lambda tup: tup[1])
-            shutil.rmtree("%s%s/%s" % (self.save_dir, get_model_name(), saves[0][0]))
+            shutil.rmtree("%s%s/%s" % (self.save_dir, self.model.get_model_name(), saves[0][0]))
+
+    def feed_from_annotation(self, annotation_path):
+        with open(annotation_path) as f:
+            annotations = f.readlines()
+        dataset_size = len(annotations) if self.dataset_size_limit is None else self.dataset_size_limit
+        annotations = [x.strip().split(',') for x in annotations[:dataset_size]]
+        rgb_path, depth_path, state, _ = zip(*annotations)
+        rgb_path = [self.dataset_parent_dir + x[3:] for x in rgb_path]
+        depth_path = [self.dataset_parent_dir + x[3:] for x in depth_path]
+        state = [states.index(x) for x in state]
+        return rgb_path, depth_path, state
+
+    def add_static_summary(self, writer, identifier, value):
+        summary = tf.Summary()
+        summary.value.add(tag=identifier, simple_value=value)
+        writer.add_summary(summary, tf.train.global_step(self.sess, tf.train.get_global_step()))
+
+    def train(self):
+        # Get train and validation dataset feeds
+        train_rgb, train_depth, train_state = self.feed_from_annotation(self.dataset_dir + self.train_annotations)
+        val_rgb, val_depth, val_state = self.feed_from_annotation(self.dataset_dir + self.val_annotations)
+
+        # Setup Tensorboard stuff
+        print('Setting up summary writers')
+        merged_summaries = tf.summary.merge_all()
+        train_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/train/', self.sess.graph)
+        val_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/validation/', self.sess.graph)
+
+        # Train for a bunch of epochs
+        print('Training model for %d epochs' % self.train_epochs)
+        epoch_times = []
+        for epoch in range(self.train_epochs):
+
+            # Learn on training data for an epoch
+            epoch_start_time = time.time()
+            self.dataset_init(train_rgb, train_depth, train_state)
+            while True:
+                try:
+                    _, summary = self.sess.run([self.train_op, merged_summaries], feed_dict={self.lr_ph: 0.1})
+                    train_writer.add_summary(summary, tf.train.global_step(self.sess, tf.train.get_global_step()))
+                except tf.errors.OutOfRangeError:
+                    break
+
+            # Collect loss and acc on validation dataset
+            self.dataset_init(val_rgb, val_depth, val_state)
+            val_losses = []
+            val_accs = []
+            while True:
+                try:
+                    loss, acc = self.sess.run([self.avg_loss_op, self.avg_acc_op], feed_dict={self.lr_ph: 0})
+                    val_losses.append(loss)
+                    val_accs.append(acc)
+                except tf.errors.OutOfRangeError:
+                    break
+
+            # Write summaries and save model
+            epoch_end_time = time.time() - epoch_start_time
+            epoch_times.append(epoch_end_time)
+            print('Done epoch # %d in %d seconds' % (epoch, epoch_end_time))
+            self.add_static_summary(train_writer, 'summaries/epoch_time', epoch_end_time)
+            self.add_static_summary(val_writer, 'summaries/avg_loss', np.mean(val_losses))
+            self.add_static_summary(val_writer, 'summaries/avg_acc', np.mean(val_accs))
+            self.save()
+        print('Finished training %d epochs in %d seconds' % (self.train_epochs, int(np.sum(epoch_times))))
+
+    def test(self):
+        print('Running test')
+        rgb, depth, state = self.feed_from_annotation(self.dataset_dir + self.test_annotations)
+        self.dataset_init(rgb, depth, state)
+        accs = []
+        while True:
+            try:
+                accs.append(self.sess.run([self.avg_acc_op]))
+            except tf.errors.OutOfRangeError:
+                break
+        print('Dataset accuracy %.4f' % np.mean(accs))
+
+    def inference(self):
+        # TODO: Make it use dynamic annotation file, handle one without state and crop mode
+        print('Running inference')
+
+        with open(self.dataset_dir + 'annotations.txt') as f:
+            annotations = f.readlines()
+        rand = random.randint(0, len(annotations) - 1)
+        rgb_path, depth_path, state, _ = annotations[rand].strip().split(',')
+        rgb_path = rgb_path[3:]
+        depth_path = depth_path[3:]
+        state = states.index(state)
+
+        print('State is %d' % state)
+
+        self.dataset_init([rgb_path], [depth_path], [state])
+        inference, acc = self.sess.run([self.inference_op(), self.inference_acc_op])
+        print('Inference: ' + str(inference))
+        print('Accuracy: %.4f' % acc)

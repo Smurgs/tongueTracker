@@ -396,24 +396,25 @@ def assign_variable_values(sess):
                             'InceptionV3/Logits/Conv2d_1c_1x1/weights',
                             'InceptionV3/Logits/Conv2d_1c_1x1/biases']
 
-    with tf.variable_scope(tf.get_variable_scope(), reuse=True):
-        rgb_inception_vars = {}
-        depth_inception_vars = {}
-        for var in pretrained_variables:
-            rgb_inception_vars[var] = tf.get_variable('model/rgb_model/rgb_inception/' + var)
-            depth_inception_vars[var] = tf.get_variable('model/depth_model/depth_inception/' + var)
+    with tf.device('/cpu:0'):
+        with tf.variable_scope(tf.get_variable_scope(), reuse=True):
+            rgb_inception_vars = {}
+            depth_inception_vars = {}
+            for var in pretrained_variables:
+                rgb_inception_vars[var] = tf.get_variable('model/rgb_model/rgb_inception/' + var)
+                depth_inception_vars[var] = tf.get_variable('model/depth_model/depth_inception/' + var)
 
-    rgb_saver = tf.train.Saver(rgb_inception_vars)
-    depth_saver = tf.train.Saver(depth_inception_vars)
-    rgb_saver.restore(sess, 'models/inception_v3.ckpt')
-    depth_saver.restore(sess, 'models/inception_v3.ckpt')
+        rgb_saver = tf.train.Saver(rgb_inception_vars)
+        depth_saver = tf.train.Saver(depth_inception_vars)
+        rgb_saver.restore(sess, 'models/inception_v3.ckpt')
+        depth_saver.restore(sess, 'models/inception_v3.ckpt')
 
 
 def get_model_name():
-    return 'RGBD_Inception2d'
+    return 'RGBD_Inception2'
 
 
-def build_model(rgb_x, depth_x, y, reuse=False):
+def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
 
     name_scope = tf.contrib.framework.get_name_scope()
 
@@ -430,7 +431,7 @@ def build_model(rgb_x, depth_x, y, reuse=False):
 
             # Create an inception model on cpu that never gets used.
             # Other instances of the model will use the variables that were created on the cpu
-            inception_input_size = tf.zeros([32, 299, 299, 3])
+            inception_input_size = tf.zeros([batch_size, 299, 299, 3])
             with tf.variable_scope('rgb_model/rgb_inception'):
                 with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
                     inception.inception_v3(inception_input_size, 1001)

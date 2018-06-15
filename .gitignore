@@ -7,3 +7,4 @@ participants.txt
 slurm*
 models/alexnet_weights.h5
 models/inception_v3.ckpt
+config

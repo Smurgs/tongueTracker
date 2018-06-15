@@ -6,10 +6,10 @@ def assign_variable_values(sess):
 
 
 def get_model_name():
-    return 'RGBD_AlexNet2b'
+    return 'RGBD_AlexNet2'
 
 
-def build_model(rgb_x, depth_x, y, reuse=False):
+def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
 
     # Combine rgb and depth data
     x = tf.concat([rgb_x, depth_x], axis=-1)

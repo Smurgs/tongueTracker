@@ -4,16 +4,14 @@ import tensorflow as tf
 
 
 def assign_variable_values(sess):
-
-    with tf.variable_scope(tf.get_variable_scope(), reuse=True):
-        pass
+    pass
 
 
 def get_model_name():
     return 'RGBD_AlexNet_Pretrained2'
 
 
-def build_model(rgb_x, depth_x, y, reuse=False):
+def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
 
     # Combine rgb and depth data
     x = tf.concat([rgb_x, depth_x], axis=-1)
