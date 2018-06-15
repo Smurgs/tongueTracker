@@ -410,7 +410,7 @@ def assign_variable_values(sess):
 
 
 def get_model_name():
-    return 'RGBD_Inception2c'
+    return 'RGBD_Inception2d'
 
 
 def build_model(rgb_x, depth_x, y, reuse=False):
@@ -419,8 +419,8 @@ def build_model(rgb_x, depth_x, y, reuse=False):
 
     # Create variables
     with tf.variable_scope('model'):
-        with tf.variable_scope('conv_variables'):
-            with tf.device('/cpu:0'):
+        with tf.device('/cpu:0'):
+            with tf.variable_scope('conv_variables'):
                 conv1W = tf.get_variable('conv1W', shape=[11, 11, 1, 96], initializer=tf.contrib.layers.xavier_initializer())
                 conv1B = tf.get_variable('conv1B', shape=[96], initializer=tf.zeros_initializer())
                 conv2W = tf.get_variable('conv2W', shape=[5, 5, 96, 192], initializer=tf.contrib.layers.xavier_initializer())
@@ -428,17 +428,27 @@ def build_model(rgb_x, depth_x, y, reuse=False):
                 conv3W = tf.get_variable('conv3W', shape=[3, 3, 192, 3], initializer=tf.contrib.layers.xavier_initializer())
                 conv3B = tf.get_variable('conv3B', shape=[3], initializer=tf.zeros_initializer())
 
+            # Create an inception model on cpu that never gets used.
+            # Other instances of the model will use the variables that were created on the cpu
+            inception_input_size = tf.zeros([32, 299, 299, 3])
+            with tf.variable_scope('rgb_model/rgb_inception'):
+                with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
+                    inception.inception_v3(inception_input_size, 1001)
+            with tf.variable_scope('depth_model/depth_inception'):
+                with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
+                    inception.inception_v3(inception_input_size, 1001)
+
         # Build graph
         with tf.variable_scope('rgb_model'):
             # RGB model
-            with tf.variable_scope('rgb_inception'):
+            with tf.variable_scope('rgb_inception', reuse=True):
                 rgb_out = tf.image.resize_images(rgb_x, (299, 299))
                 with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
                     inception.inception_v3(rgb_out, 1001)
-                    rgb_aux_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/rgb_model/rgb_inception/InceptionV3/AuxLogits/Conv2d_2a_5x5/Relu:0')
-                    rgb_aux_logits = layers.conv2d(rgb_aux_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
-                                                   weights_initializer=trunc_normal(0.001), scope='Conv2d_2b_1x1')
-                    rgb_aux_logits = tf.squeeze(rgb_aux_logits)
+            rgb_aux_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/rgb_model/rgb_inception/InceptionV3/AuxLogits/Conv2d_2a_5x5/Relu:0')
+            rgb_aux_logits = layers.conv2d(rgb_aux_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
+                                           weights_initializer=trunc_normal(0.001), scope='Conv2d_2b_1x1')
+            rgb_aux_logits = tf.squeeze(rgb_aux_logits)
 
         with tf.variable_scope('depth_model'):
             # Depth model
@@ -448,14 +458,14 @@ def build_model(rgb_x, depth_x, y, reuse=False):
                 depth_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(depth_out, conv2W, [1, 1, 1, 1], 'SAME'), conv2B))
             with tf.variable_scope('conv3'):
                 depth_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(depth_out, conv3W, [1, 1, 1, 1], 'SAME'), conv3B))
-            with tf.variable_scope('depth_inception'):
+            with tf.variable_scope('depth_inception', reuse=True):
                 depth_out = tf.image.resize_images(depth_out, (299, 299))
                 with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
                     inception.inception_v3(depth_out, 1001)
-                    depth_aux_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/depth_model/depth_inception/InceptionV3/AuxLogits/Conv2d_2a_5x5/Relu:0')
-                    depth_aux_logits = layers.conv2d(depth_aux_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
-                                                     weights_initializer=trunc_normal(0.001), scope='Conv2d_2b_1x1')
-                    depth_aux_logits = tf.squeeze(depth_aux_logits)
+            depth_aux_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/depth_model/depth_inception/InceptionV3/AuxLogits/Conv2d_2a_5x5/Relu:0')
+            depth_aux_logits = layers.conv2d(depth_aux_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
+                                             weights_initializer=trunc_normal(0.001), scope='Conv2d_2b_1x1')
+            depth_aux_logits = tf.squeeze(depth_aux_logits)
 
         with tf.variable_scope('fused_models'):
             rgb_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/rgb_model/rgb_inception/InceptionV3/Logits/Dropout_1b/dropout/mul:0')
