@@ -158,7 +158,9 @@ class ModelManager(object):
 
         # Overall train op
         global_step = tf.train.create_global_step()
-        optimizer.apply_gradients(average_gradients, global_step=global_step, name='train')
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            optimizer.apply_gradients(average_gradients, global_step=global_step, name='train')
         self.sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
         self.model.assign_variable_values(self.sess)
 

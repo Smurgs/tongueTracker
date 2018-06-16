@@ -24,7 +24,8 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
         with tf.variable_scope('conv_variables'):
             with tf.device('/cpu:0'):
                 # Conv1
-                conv1W_values = np.transpose(np.array(f['conv_1']['conv_1_W']))
+                print(np.array(f['conv_1']['conv_1_W']).shape)
+                conv1W_values = np.array(f['conv_1']['conv_1_W']).transpose((2, 3, 1, 0))
                 conv1Wa = tf.get_variable('conv1Wa', initializer=tf.constant(conv1W_values))
                 conv1Wb = tf.get_variable('conv1Wb', shape=[11, 11, 1, 96], initializer=tf.contrib.layers.xavier_initializer())
                 conv1W = tf.concat([conv1Wa, conv1Wb], axis=2)
@@ -32,8 +33,8 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
                 conv1B = tf.get_variable('conv1B', initializer=tf.constant(conv1B_values))
 
                 # Conv2
-                conv2W_1_values = np.transpose(np.array(f['conv_2_1']['conv_2_1_W']))
-                conv2W_2_values = np.transpose(np.array(f['conv_2_2']['conv_2_2_W']))
+                conv2W_1_values = np.array(f['conv_2_1']['conv_2_1_W']).transpose((2, 3, 1, 0))
+                conv2W_2_values = np.array(f['conv_2_2']['conv_2_2_W']).transpose((2, 3, 1, 0))
                 conv2W_1 = tf.get_variable('conv2W_1', initializer=tf.constant(conv2W_1_values))
                 conv2W_2 = tf.get_variable('conv2W_2', initializer=tf.constant(conv2W_2_values))
                 conv2B_1_values = np.array(f['conv_2_1']['conv_2_1_b'])
@@ -42,14 +43,14 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
                 conv2B_2 = tf.get_variable('conv2B_2', initializer=tf.constant(conv2B_2_values))
 
                 # Conv3
-                conv3W_values = np.transpose(np.array(f['conv_3']['conv_3_W']))
+                conv3W_values = np.array(f['conv_3']['conv_3_W']).transpose((2, 3, 1, 0))
                 conv3W = tf.get_variable('conv3W', initializer=tf.constant(conv3W_values))
                 conv3B_values = np.array(f['conv_3']['conv_3_b'])
                 conv3B = tf.get_variable('conv3B', initializer=tf.constant(conv3B_values))
 
                 # Conv4
-                conv4W_1_values = np.transpose(np.array(f['conv_4_1']['conv_4_1_W']))
-                conv4W_2_values = np.transpose(np.array(f['conv_4_2']['conv_4_2_W']))
+                conv4W_1_values = np.array(f['conv_4_1']['conv_4_1_W']).transpose((2, 3, 1, 0))
+                conv4W_2_values = np.array(f['conv_4_2']['conv_4_2_W']).transpose((2, 3, 1, 0))
                 conv4W_1 = tf.get_variable('conv4W_1', initializer=tf.constant(conv4W_1_values))
                 conv4W_2 = tf.get_variable('conv4W_2', initializer=tf.constant(conv4W_2_values))
                 conv4B_1_values = np.array(f['conv_4_1']['conv_4_1_b'])
@@ -58,8 +59,8 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
                 conv4B_2 = tf.get_variable('conv4B_2', initializer=tf.constant(conv4B_2_values))
 
                 # Conv5
-                conv5W_1_values = np.transpose(np.array(f['conv_5_1']['conv_5_1_W']))
-                conv5W_2_values = np.transpose(np.array(f['conv_5_2']['conv_5_2_W']))
+                conv5W_1_values = np.array(f['conv_5_1']['conv_5_1_W']).transpose((2, 3, 1, 0))
+                conv5W_2_values = np.array(f['conv_5_2']['conv_5_2_W']).transpose((2, 3, 1, 0))
                 conv5W_1 = tf.get_variable('conv5W_1', initializer=tf.constant(conv5W_1_values))
                 conv5W_2 = tf.get_variable('conv5W_2', initializer=tf.constant(conv5W_2_values))
                 conv5B_1_values = np.array(f['conv_5_1']['conv_5_1_b'])
