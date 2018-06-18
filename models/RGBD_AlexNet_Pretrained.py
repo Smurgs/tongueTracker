@@ -27,7 +27,6 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
         with tf.variable_scope('conv_variables'):
             with tf.device('/cpu:0'):
                 # Conv1
-                print(np.array(f['conv_1']['conv_1_W']).shape)
                 conv1W_values = np.array(f['conv_1']['conv_1_W']).transpose((2, 3, 1, 0))
                 conv1Wa = tf.get_variable('conv1Wa', initializer=tf.constant(conv1W_values))
                 conv1Wb = tf.get_variable('conv1Wb', shape=[11, 11, 1, 96], initializer=tf.contrib.layers.xavier_initializer())
