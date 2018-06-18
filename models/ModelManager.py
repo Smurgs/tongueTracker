@@ -51,6 +51,7 @@ class ModelManager(object):
         self.inference_acc_op = tf.get_default_graph().get_tensor_by_name('tower_0/accuracy/acc:0')
         self.avg_loss_op = tf.reduce_mean(tf.stack(tf.losses.get_losses()))
         self.lr_ph = tf.get_default_graph().get_tensor_by_name('learning_rate:0')
+        self.training_ph = tf.get_default_graph().get_tensor_by_name('training_ph:0')
         self.add_scalar_summaries()
 
     def dataset_init(self, rgb_paths, depth_paths, state_values):
@@ -117,17 +118,18 @@ class ModelManager(object):
         print('Devices found: ' + str(devices))
 
         # Build model on each available device
+        training_ph = tf.placeholder(tf.bool, name='training_ph')
         for x in range(len(devices)):
             print('Building tower %d' % x)
             with tf.device(devices[x]):
                 with tf.name_scope('tower_%d' % x):
-                    with tf.variable_scope(tf.get_variable_scope(), reuse=x!=0):
+                    with tf.variable_scope(tf.get_variable_scope(), reuse=x != 0):
                         rgb_x, depth_x, y = dataset_iterator.get_next()
                         tf.identity(rgb_x, name='rgb_x')
                         tf.identity(depth_x, name='depth_x')
 
                         # Build instance of model
-                        self.model.build_model(rgb_x, depth_x, y, self.batch_size, x != 0)
+                        self.model.build_model(rgb_x, depth_x, y, self.batch_size, x != 0, training_ph)
 
         # Average gradients from all devices
         print('Building train op')
@@ -234,7 +236,8 @@ class ModelManager(object):
             self.dataset_init(train_rgb, train_depth, train_state)
             while True:
                 try:
-                    _, summary = self.sess.run([self.train_op, merged_summaries], feed_dict={self.lr_ph: 0.1})
+                    _, summary = self.sess.run([self.train_op, merged_summaries],
+                                               feed_dict={self.lr_ph: self.model.get_learning_rate(), self.training_ph: True})
                     train_writer.add_summary(summary, tf.train.global_step(self.sess, tf.train.get_global_step()))
                 except tf.errors.OutOfRangeError:
                     break
@@ -245,7 +248,8 @@ class ModelManager(object):
             val_accs = []
             while True:
                 try:
-                    loss, acc = self.sess.run([self.avg_loss_op, self.avg_acc_op], feed_dict={self.lr_ph: 0})
+                    loss, acc = self.sess.run([self.avg_loss_op, self.avg_acc_op],
+                                              feed_dict={self.lr_ph: 0, self.training_ph: False})
                     val_losses.append(loss)
                     val_accs.append(acc)
                 except tf.errors.OutOfRangeError:
@@ -268,7 +272,7 @@ class ModelManager(object):
         accs = []
         while True:
             try:
-                accs.append(self.sess.run([self.avg_acc_op]))
+                accs.append(self.sess.run([self.avg_acc_op], feed_dict={self.lr_ph: 0, self.training_ph: False}))
             except tf.errors.OutOfRangeError:
                 break
         print('Dataset accuracy %.4f' % np.mean(accs))
@@ -288,6 +292,7 @@ class ModelManager(object):
         print('State is %d' % state)
 
         self.dataset_init([rgb_path], [depth_path], [state])
-        inference, acc = self.sess.run([self.inference_op(), self.inference_acc_op])
+        inference, acc = self.sess.run([self.inference_op(), self.inference_acc_op],
+                                       feed_dict={self.lr_ph: 0, self.training_ph: False})
         print('Inference: ' + str(inference))
         print('Accuracy: %.4f' % acc)

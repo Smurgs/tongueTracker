@@ -6,6 +6,9 @@ from tensorflow.contrib.slim.nets import inception
 trunc_normal = lambda stddev: init_ops.truncated_normal_initializer(0.0, stddev)
 
 
+def get_learning_rate(): return 0.001
+
+
 def assign_variable_values(sess):
     pretrained_variables = ['InceptionV3/Conv2d_1a_3x3/weights',
                             'InceptionV3/Conv2d_1a_3x3/BatchNorm/beta',
@@ -414,7 +417,7 @@ def get_model_name():
     return 'RGBD_Inception2'
 
 
-def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
+def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
 
     name_scope = tf.contrib.framework.get_name_scope()
 
@@ -445,7 +448,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
             with tf.variable_scope('rgb_inception', reuse=True):
                 rgb_out = tf.image.resize_images(rgb_x, (299, 299))
                 with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
-                    inception.inception_v3(rgb_out, 1001)
+                    inception.inception_v3(rgb_out, 1001, is_training=training_ph)
             rgb_aux_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/rgb_model/rgb_inception/InceptionV3/AuxLogits/Conv2d_2a_5x5/Relu:0')
             rgb_aux_logits = layers.conv2d(rgb_aux_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
                                            weights_initializer=trunc_normal(0.001), scope='Conv2d_2b_1x1')
@@ -462,7 +465,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
             with tf.variable_scope('depth_inception', reuse=True):
                 depth_out = tf.image.resize_images(depth_out, (299, 299))
                 with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
-                    inception.inception_v3(depth_out, 1001)
+                    inception.inception_v3(depth_out, 1001, is_training=training_ph)
             depth_aux_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/depth_model/depth_inception/InceptionV3/AuxLogits/Conv2d_2a_5x5/Relu:0')
             depth_aux_logits = layers.conv2d(depth_aux_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
                                              weights_initializer=trunc_normal(0.001), scope='Conv2d_2b_1x1')
@@ -472,9 +475,9 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
             rgb_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/rgb_model/rgb_inception/InceptionV3/Logits/Dropout_1b/dropout/mul:0')
             depth_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/depth_model/depth_inception/InceptionV3/Logits/Dropout_1b/dropout/mul:0')
             model_logits = tf.concat([rgb_logits, depth_logits], axis=-1)
-            model_logits = tf.nn.dropout(model_logits, 0.5)
+            model_logits = tf.layers.dropout(model_logits, 0.5, training=training_ph)
             model_logits = layers.conv2d(model_logits, 4096, [1, 1], weights_initializer=trunc_normal(0.001), scope='fc1')
-            model_logits = tf.nn.dropout(model_logits, 0.5)
+            model_logits = tf.layers.dropout(model_logits, 0.5, training=training_ph)
             model_logits = layers.conv2d(model_logits, 4096, [1, 1], weights_initializer=trunc_normal(0.001), scope='fc2')
             model_logits = layers.conv2d(model_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
                                          weights_initializer=trunc_normal(0.001), scope='fc3')

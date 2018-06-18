@@ -1,6 +1,9 @@
 import tensorflow as tf
 
 
+def get_learning_rate(): return 0.1
+
+
 def assign_variable_values(sess):
     pass
 
@@ -9,7 +12,7 @@ def get_model_name():
     return 'RGBD_AlexNet2'
 
 
-def build_model(rgb_x, depth_x, y, batch_size, reuse=False):
+def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
 
     # Combine rgb and depth data
     x = tf.concat([rgb_x, depth_x], axis=-1)
