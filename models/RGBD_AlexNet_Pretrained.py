@@ -99,19 +99,19 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
         model_out = tf.contrib.layers.flatten(model_out)
 
         # Dropout
-        model_out = tf.nn.dropout(model_out, 0.5)
+        model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
 
         # Fc1
-        tf.get_variable('fc1/weights', initializer=tf.constant(np.array(f['dense_1']['dense_1_W'])))
-        tf.get_variable('fc1/biases', initializer=tf.constant(np.array(f['dense_1']['dense_1_b'])))
+        #tf.get_variable('fc1/weights', initializer=tf.constant(np.array(f['dense_1']['dense_1_W'])))
+        #tf.get_variable('fc1/biases', initializer=tf.constant(np.array(f['dense_1']['dense_1_b'])))
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=True, scope='fc1')
 
         # Dropout
-        model_out = tf.nn.dropout(model_out, 0.5)
+        model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
 
         # Fc2
-        tf.get_variable('fc2/weights', initializer=tf.constant(np.array(f['dense_2']['dense_2_W'])))
-        tf.get_variable('fc2/biases', initializer=tf.constant(np.array(f['dense_2']['dense_2_b'])))
+        #tf.get_variable('fc2/weights', initializer=tf.constant(np.array(f['dense_2']['dense_2_W'])))
+        #tf.get_variable('fc2/biases', initializer=tf.constant(np.array(f['dense_2']['dense_2_b'])))
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=True, scope='fc2')
 
         # Fc3
