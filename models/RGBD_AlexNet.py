@@ -52,7 +52,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
         model_out = tf.contrib.layers.flatten(model_out)
         model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc1')
-        model_out = tf.nn.dropout(model_out, 0.5, training=training_ph)
+        model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc2')
         model_out = tf.contrib.layers.fully_connected(model_out, 7, reuse=reuse, scope='fc3', activation_fn=None)
 
