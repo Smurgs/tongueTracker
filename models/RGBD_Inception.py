@@ -6,7 +6,7 @@ from tensorflow.contrib.slim.nets import inception
 trunc_normal = lambda stddev: init_ops.truncated_normal_initializer(0.0, stddev)
 
 
-def get_learning_rate(): return 0.00001
+def get_learning_rate(): return 0.0000001
 
 
 def assign_variable_values(sess):
