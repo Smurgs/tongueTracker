@@ -9,7 +9,7 @@ def assign_variable_values(sess):
 
 
 def get_model_name():
-    return 'RGBD_AlexNet2'
+    return 'RGBD_AlexNet2a'
 
 
 def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
@@ -51,9 +51,9 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
         model_out = tf.contrib.layers.flatten(model_out)
         model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
-        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc1')
+        model_out = tf.contrib.layers.fully_connected(model_out, 2048, reuse=reuse, scope='fc1')
         model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
-        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc2')
+        model_out = tf.contrib.layers.fully_connected(model_out, 2048, reuse=reuse, scope='fc2')
         model_out = tf.contrib.layers.fully_connected(model_out, 7, reuse=reuse, scope='fc3', activation_fn=None)
 
     # Inference
