@@ -11,7 +11,7 @@ def assign_variable_values(sess):
 
 
 def get_model_name():
-    return 'RGBD_AlexNet_Pretrained2'
+    return 'RGBD_AlexNet_Pretrained2b'
 
 
 def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
@@ -27,48 +27,64 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
         with tf.variable_scope('conv_variables'):
             with tf.device('/cpu:0'):
                 # Conv1
-                conv1W_values = np.array(f['conv_1']['conv_1_W']).transpose()
-                conv1Wa = tf.get_variable('conv1Wa', initializer=tf.constant(conv1W_values))
-                conv1Wb = tf.get_variable('conv1Wb', shape=[11, 11, 1, 96], initializer=tf.contrib.layers.xavier_initializer())
-                conv1W = tf.concat([conv1Wa, conv1Wb], axis=2)
-                conv1B_values = np.array(f['conv_1']['conv_1_b'])
-                conv1B = tf.get_variable('conv1B', initializer=tf.constant(conv1B_values))
+                #conv1W_values = np.array(f['conv_1']['conv_1_W']).transpose((2, 3, 1, 0))
+                #conv1Wa = tf.get_variable('conv1Wa', initializer=tf.constant(conv1W_values))
+                #conv1Wb = tf.get_variable('conv1Wb', shape=[11, 11, 1, 96], initializer=tf.contrib.layers.xavier_initializer())
+                #conv1W = tf.concat([conv1Wa, conv1Wb], axis=2)
+                #conv1B_values = np.array(f['conv_1']['conv_1_b'])
+                #conv1B = tf.get_variable('conv1B', initializer=tf.constant(conv1B_values))
+                conv1W = tf.get_variable('conv1W', shape=[11, 11, 4, 96], initializer=tf.contrib.layers.xavier_initializer())
+                conv1B = tf.get_variable('conv1B', shape=[96], initializer=tf.zeros_initializer())
 
                 # Conv2
-                conv2W_1_values = np.array(f['conv_2_1']['conv_2_1_W']).transpose()
-                conv2W_2_values = np.array(f['conv_2_2']['conv_2_2_W']).transpose()
-                conv2W_1 = tf.get_variable('conv2W_1', initializer=tf.constant(conv2W_1_values))
-                conv2W_2 = tf.get_variable('conv2W_2', initializer=tf.constant(conv2W_2_values))
-                conv2B_1_values = np.array(f['conv_2_1']['conv_2_1_b'])
-                conv2B_2_values = np.array(f['conv_2_2']['conv_2_2_b'])
-                conv2B_1 = tf.get_variable('conv2B_1', initializer=tf.constant(conv2B_1_values))
-                conv2B_2 = tf.get_variable('conv2B_2', initializer=tf.constant(conv2B_2_values))
+                #conv2W_1_values = np.array(f['conv_2_1']['conv_2_1_W']).transpose((2, 3, 1, 0))
+                #conv2W_2_values = np.array(f['conv_2_2']['conv_2_2_W']).transpose((2, 3, 1, 0))
+                #conv2W_1 = tf.get_variable('conv2W_1', initializer=tf.constant(conv2W_1_values))
+                #conv2W_2 = tf.get_variable('conv2W_2', initializer=tf.constant(conv2W_2_values))
+                #conv2B_1_values = np.array(f['conv_2_1']['conv_2_1_b'])
+                #conv2B_2_values = np.array(f['conv_2_2']['conv_2_2_b'])
+                #conv2B_1 = tf.get_variable('conv2B_1', initializer=tf.constant(conv2B_1_values))
+                #conv2B_2 = tf.get_variable('conv2B_2', initializer=tf.constant(conv2B_2_values))
+                conv2W_1 = tf.get_variable('conv2W_1', shape=[5, 5, 48, 128], initializer=tf.contrib.layers.xavier_initializer())
+                conv2W_2 = tf.get_variable('conv2W_2', shape=[5, 5, 48, 128], initializer=tf.contrib.layers.xavier_initializer())
+                conv2B_1 = tf.get_variable('conv2B_1', shape=[128], initializer=tf.zeros_initializer())
+                conv2B_2 = tf.get_variable('conv2B_2', shape=[128], initializer=tf.zeros_initializer())
 
                 # Conv3
-                conv3W_values = np.array(f['conv_3']['conv_3_W']).transpose()
-                conv3W = tf.get_variable('conv3W', initializer=tf.constant(conv3W_values))
-                conv3B_values = np.array(f['conv_3']['conv_3_b'])
-                conv3B = tf.get_variable('conv3B', initializer=tf.constant(conv3B_values))
+                #conv3W_values = np.array(f['conv_3']['conv_3_W']).transpose((2, 3, 1, 0))
+                #conv3W = tf.get_variable('conv3W', initializer=tf.constant(conv3W_values))
+                #conv3B_values = np.array(f['conv_3']['conv_3_b'])
+                #conv3B = tf.get_variable('conv3B', initializer=tf.constant(conv3B_values))
+                conv3W = tf.get_variable('conv3W', shape=[3, 3, 256, 384], initializer=tf.contrib.layers.xavier_initializer())
+                conv3B = tf.get_variable('conv3B', shape=[384], initializer=tf.zeros_initializer())
 
                 # Conv4
-                conv4W_1_values = np.array(f['conv_4_1']['conv_4_1_W']).transpose()
-                conv4W_2_values = np.array(f['conv_4_2']['conv_4_2_W']).transpose()
-                conv4W_1 = tf.get_variable('conv4W_1', initializer=tf.constant(conv4W_1_values))
-                conv4W_2 = tf.get_variable('conv4W_2', initializer=tf.constant(conv4W_2_values))
-                conv4B_1_values = np.array(f['conv_4_1']['conv_4_1_b'])
-                conv4B_2_values = np.array(f['conv_4_2']['conv_4_2_b'])
-                conv4B_1 = tf.get_variable('conv4B_1', initializer=tf.constant(conv4B_1_values))
-                conv4B_2 = tf.get_variable('conv4B_2', initializer=tf.constant(conv4B_2_values))
+                #conv4W_1_values = np.array(f['conv_4_1']['conv_4_1_W']).transpose((2, 3, 1, 0))
+                #conv4W_2_values = np.array(f['conv_4_2']['conv_4_2_W']).transpose((2, 3, 1, 0))
+                #conv4W_1 = tf.get_variable('conv4W_1', initializer=tf.constant(conv4W_1_values))
+                #conv4W_2 = tf.get_variable('conv4W_2', initializer=tf.constant(conv4W_2_values))
+                #conv4B_1_values = np.array(f['conv_4_1']['conv_4_1_b'])
+                #conv4B_2_values = np.array(f['conv_4_2']['conv_4_2_b'])
+                #conv4B_1 = tf.get_variable('conv4B_1', initializer=tf.constant(conv4B_1_values))
+                #conv4B_2 = tf.get_variable('conv4B_2', initializer=tf.constant(conv4B_2_values))
+                conv4W_1 = tf.get_variable('conv4W_1', shape=[3, 3, 192, 192], initializer=tf.contrib.layers.xavier_initializer())
+                conv4W_2 = tf.get_variable('conv4W_2', shape=[3, 3, 192, 192], initializer=tf.contrib.layers.xavier_initializer())
+                conv4B_1 = tf.get_variable('conv4B_1', shape=[192], initializer=tf.zeros_initializer())
+                conv4B_2 = tf.get_variable('conv4B_2', shape=[192], initializer=tf.zeros_initializer())
 
                 # Conv5
-                conv5W_1_values = np.array(f['conv_5_1']['conv_5_1_W']).transpose()
-                conv5W_2_values = np.array(f['conv_5_2']['conv_5_2_W']).transpose()
-                conv5W_1 = tf.get_variable('conv5W_1', initializer=tf.constant(conv5W_1_values))
-                conv5W_2 = tf.get_variable('conv5W_2', initializer=tf.constant(conv5W_2_values))
-                conv5B_1_values = np.array(f['conv_5_1']['conv_5_1_b'])
-                conv5B_2_values = np.array(f['conv_5_2']['conv_5_2_b'])
-                conv5B_1 = tf.get_variable('conv5B_1', initializer=tf.constant(conv5B_1_values))
-                conv5B_2 = tf.get_variable('conv5B_2', initializer=tf.constant(conv5B_2_values))
+                #conv5W_1_values = np.array(f['conv_5_1']['conv_5_1_W']).transpose((2, 3, 1, 0))
+                #conv5W_2_values = np.array(f['conv_5_2']['conv_5_2_W']).transpose((2, 3, 1, 0))
+                #conv5W_1 = tf.get_variable('conv5W_1', initializer=tf.constant(conv5W_1_values))
+                #conv5W_2 = tf.get_variable('conv5W_2', initializer=tf.constant(conv5W_2_values))
+                #conv5B_1_values = np.array(f['conv_5_1']['conv_5_1_b'])
+                #conv5B_2_values = np.array(f['conv_5_2']['conv_5_2_b'])
+                #conv5B_1 = tf.get_variable('conv5B_1', initializer=tf.constant(conv5B_1_values))
+                #conv5B_2 = tf.get_variable('conv5B_2', initializer=tf.constant(conv5B_2_values))
+                conv5W_1 = tf.get_variable('conv5W_1', shape=[3, 3, 192, 128], initializer=tf.contrib.layers.xavier_initializer())
+                conv5W_2 = tf.get_variable('conv5W_2', shape=[3, 3, 192, 128], initializer=tf.contrib.layers.xavier_initializer())
+                conv5B_1 = tf.get_variable('conv5B_1', shape=[128], initializer=tf.zeros_initializer())
+                conv5B_2 = tf.get_variable('conv5B_2', shape=[128], initializer=tf.zeros_initializer())
 
         # Build graph
         with tf.variable_scope('conv1'):
