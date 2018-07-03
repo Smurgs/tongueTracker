@@ -9,19 +9,19 @@ def get_learning_rate(): return 0.01
 def get_batch_size(): return 32
 
 
-def get_train_vars(): return None
+def get_train_vars():
+    with tf.variable_scope(tf.get_variable_scope(), reuse=True):
+        train_vars = [tf.get_variable('model/fc3/weights'), tf.get_variable('model/fc3/biases')]
+    return train_vars
 
 
 def assign_variable_values(sess): pass
 
 
-def get_model_name(): return 'RGBD_AlexNet_Pretrained2b'
+def get_model_name(): return 'RGB_AlexNet_Pretrained2'
 
 
 def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
-
-    # Combine rgb and depth data
-    x = tf.concat([rgb_x, depth_x], axis=-1)
 
     # Load pretrained variables
     f = h5py.File('models/alexnet_weights.h5', 'r')
@@ -32,9 +32,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
             with tf.device('/cpu:0'):
                 # Conv1
                 conv1W_values = np.array(f['conv_1']['conv_1_W']).transpose()
-                conv1Wa = tf.get_variable('conv1Wa', initializer=tf.constant(conv1W_values))
-                conv1Wb = tf.get_variable('conv1Wb', shape=[11, 11, 1, 96], initializer=tf.contrib.layers.xavier_initializer())
-                conv1W = tf.concat([conv1Wa, conv1Wb], axis=2)
+                conv1W = tf.get_variable('conv1Wa', initializer=tf.constant(conv1W_values))
                 conv1B_values = np.array(f['conv_1']['conv_1_b'])
                 conv1B = tf.get_variable('conv1B', initializer=tf.constant(conv1B_values))
 
@@ -76,7 +74,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
 
         # Build graph
         with tf.variable_scope('conv1'):
-            model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(x, conv1W, [1, 4, 4, 1], 'VALID'), conv1B))
+            model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(rgb_x, conv1W, [1, 4, 4, 1], 'VALID'), conv1B))
         with tf.variable_scope('max_pool1'):
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
         with tf.variable_scope('conv2'):

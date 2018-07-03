@@ -10,14 +10,18 @@ from tensorflow.python.client import device_lib
 
 import models.RGB_AlexNet
 import models.RGBD_AlexNet
+import models.RGB_AlexNet_Pretrained
 import models.RGBD_AlexNet_Pretrained
+import models.RGB_Inception
 import models.RGBD_Inception
 
 states = ['mouth_closed', 'mouth_open', 'tongue_down', 'tongue_left', 'tongue_middle', 'tongue_right', 'tongue_up']
 
 models = {'RGB_AlexNet': models.RGB_AlexNet,
           'RGBD_AlexNet': models.RGBD_AlexNet,
+          'RGB_AlexNet_Pretrained': models.RGB_AlexNet_Pretrained,
           'RGBD_AlexNet_Pretrained': models.RGBD_AlexNet_Pretrained,
+          'RGB_Inception': models.RGB_Inception,
           'RGBD_Inception': models.RGBD_Inception}
 
 
@@ -29,10 +33,10 @@ class ModelManager(object):
         with open('config') as f:
             data = json.load(f)
         self.train_epochs = data['train_epochs']
-        self.batch_size = data['batch_size']
         self.dataset_parent_dir = data['dataset_parent_dir']
         self.dataset_dir = self.dataset_parent_dir + 'tongue_dataset/scaled/'
         self.dataset_size_limit = None if 'dataset_size_limit' not in data else data['dataset_size_limit']
+        self.batch_size = model.get_batch_size() if 'batch_size' not in data else data['batch_size']
         self.train_annotations = data['train_annotations']
         self.val_annotations = data['val_annotations']
         self.test_annotations = data['test_annotations']
@@ -140,7 +144,7 @@ class ModelManager(object):
             losses = tf.losses.get_losses()
             grads = []
             for loss in losses:
-                grad = optimizer.compute_gradients(loss)
+                grad = optimizer.compute_gradients(loss, var_list=self.model.get_train_vars())
                 grads.append(grad)
 
             for grad_and_vars in zip(*grads):
@@ -238,8 +242,8 @@ class ModelManager(object):
                 try:
                     _, summary = self.sess.run([self.train_op, merged_summaries],
                                                feed_dict={self.lr_ph: self.model.get_learning_rate(), self.training_ph: True})
-                    train_writer.add_summary(summary, tf.train.global_step(self.sess, tf.train.get_global_step()))
                 except tf.errors.OutOfRangeError:
+                    train_writer.add_summary(summary, tf.train.global_step(self.sess, tf.train.get_global_step()))
                     break
 
             # Collect loss and acc on validation dataset
