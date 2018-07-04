@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def get_learning_rate(): return 0.01
+def get_learning_rate(): return 0.1
 
 
 def get_batch_size(): return 32
