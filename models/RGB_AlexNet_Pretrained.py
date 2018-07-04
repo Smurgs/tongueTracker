@@ -11,7 +11,8 @@ def get_batch_size(): return 32
 
 def get_train_vars():
     with tf.variable_scope(tf.get_variable_scope(), reuse=True):
-        train_vars = [tf.get_variable('model/fc3/weights'), tf.get_variable('model/fc3/biases')]
+        train_vars = [tf.get_variable('model/fc3/weights'),
+                      tf.get_variable('model/fc3/biases')]
     return train_vars
 
 

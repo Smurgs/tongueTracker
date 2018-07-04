@@ -6,7 +6,7 @@ from tensorflow.contrib.slim.nets import inception
 trunc_normal = lambda stddev: init_ops.truncated_normal_initializer(0.0, stddev)
 
 
-def get_learning_rate(): return 0.01
+def get_learning_rate(): return 0.1
 
 
 def get_batch_size(): return 8
@@ -428,24 +428,25 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
 
     name_scope = tf.contrib.framework.get_name_scope()
 
-    # Create variables
+    # Build graph
     with tf.variable_scope('model'):
-        with tf.device('/cpu:0'):
-            # Create an inception model on cpu that never gets used.
-            # Other instances of the model will use the variables that were created on the cpu
-            inception_input_size = tf.zeros([batch_size, 299, 299, 3])
-            with tf.variable_scope('rgb_inception'):
-                with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
-                    inception.inception_v3(inception_input_size, 1001)
+        # Create an inception model on cpu that never gets used.
+        # Other instances of the model will use the variables that were created on the cpu
+        if not reuse:
+            with tf.device('/cpu:0'):
+                inception_input_size = tf.zeros([batch_size, 299, 299, 3])
+                with tf.name_scope('cpu_inception'):
+                    with tf.variable_scope('rgb_inception'):
+                        with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
+                            inception.inception_v3(inception_input_size, 1001)
 
-        # Build graph
         with tf.variable_scope('rgb_inception', reuse=True):
             rgb_out = tf.image.resize_images(rgb_x, (299, 299))
             with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
-                inception.inception_v3(rgb_out, 1001, is_training=training_ph)
+                inception.inception_v3(rgb_out, 1001)
 
         model_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/rgb_inception/InceptionV3/Logits/Dropout_1b/dropout/mul:0')
-        model_logits = layers.conv2d(model_logits, 4096, [1, 1], weights_initializer=trunc_normal(0.001), scope='fc1')
+        model_logits = layers.conv2d(model_logits, 2048, [1, 1], weights_initializer=trunc_normal(0.001), scope='fc1')
         model_logits = layers.conv2d(model_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
                                      weights_initializer=trunc_normal(0.001), scope='fc2')
         model_logits = tf.squeeze(model_logits)

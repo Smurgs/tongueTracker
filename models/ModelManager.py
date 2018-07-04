@@ -142,20 +142,12 @@ class ModelManager(object):
             average_gradients = []
             optimizer = tf.train.AdadeltaOptimizer(learning_rate)
             losses = tf.losses.get_losses()
-            grads = []
-            for loss in losses:
-                grad = optimizer.compute_gradients(loss, var_list=self.model.get_train_vars())
-                grads.append(grad)
-
+            grads = [optimizer.compute_gradients(x, var_list=self.model.get_train_vars()) for x in losses]
             for grad_and_vars in zip(*grads):
                 grads = []
-                for g, _ in grad_and_vars:
-                    if g is None:
-                        continue
+                for g, a in grad_and_vars:
                     expanded_g = tf.expand_dims(g, 0)
                     grads.append(expanded_g)
-                if len(grads) == 0:
-                    continue
                 grad = tf.concat(axis=0, values=grads)
                 grad = tf.reduce_mean(grad, 0)
                 v = grad_and_vars[0][1]
