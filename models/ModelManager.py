@@ -36,7 +36,7 @@ class ModelManager(object):
         self.dataset_parent_dir = data['dataset_parent_dir']
         self.dataset_dir = self.dataset_parent_dir + 'tongue_dataset/scaled/'
         self.dataset_size_limit = None if 'dataset_size_limit' not in data else data['dataset_size_limit']
-        self.batch_size = model.get_batch_size() if 'batch_size' not in data else data['batch_size']
+        self.batch_size = self.model.get_batch_size() if 'batch_size' not in data else data['batch_size']
         self.train_annotations = data['train_annotations']
         self.val_annotations = data['val_annotations']
         self.test_annotations = data['test_annotations']
