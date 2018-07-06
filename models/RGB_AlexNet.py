@@ -38,22 +38,26 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
             model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(rgb_x, conv1W, [1, 4, 4, 1], 'VALID'), conv1B))
         with tf.variable_scope('max_pool1'):
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
+            model_out = tf.layers.dropout(model_out, 0.15, training=training_ph)
         with tf.variable_scope('conv2'):
             model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_out, conv2W, [1, 1, 1, 1], 'SAME'), conv2B))
         with tf.variable_scope('max_pool2'):
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
+            model_out = tf.layers.dropout(model_out, 0.15, training=training_ph)
         with tf.variable_scope('conv3'):
             model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_out, conv3W, [1, 1, 1, 1], 'SAME'), conv3B))
+            model_out = tf.layers.dropout(model_out, 0.15, training=training_ph)
         with tf.variable_scope('conv4'):
             model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_out, conv4W, [1, 1, 1, 1], 'SAME'), conv4B))
+            model_out = tf.layers.dropout(model_out, 0.15, training=training_ph)
         with tf.variable_scope('conv5'):
             model_out = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(model_out, conv5W, [1, 1, 1, 1], 'SAME'), conv5B))
         with tf.variable_scope('max_pool3'):
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
         model_out = tf.contrib.layers.flatten(model_out)
-        model_out = tf.nn.dropout(model_out, 0.5)
+        model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc1')
-        model_out = tf.nn.dropout(model_out, 0.5)
+        model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc2')
         model_out = tf.contrib.layers.fully_connected(model_out, 7, reuse=reuse, scope='fc3', activation_fn=None)
 
@@ -71,16 +75,16 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
         tf.add_to_collection('accuracy_collection', acc)
 
     # Tensorboard
-    if reuse is False:
-        with tf.name_scope('summaries'):
-            tf.summary.histogram('conv1W', conv1W)
-            tf.summary.histogram('conv1B', conv1B)
-            tf.summary.histogram('conv2W', conv2W)
-            tf.summary.histogram('conv2B', conv2B)
-            tf.summary.histogram('conv3W', conv3W)
-            tf.summary.histogram('conv3B', conv3B)
-            tf.summary.histogram('conv4W', conv4W)
-            tf.summary.histogram('conv4B', conv4B)
-            tf.summary.histogram('conv5W', conv5W)
-            tf.summary.histogram('conv5B', conv5B)
+    #if reuse is False:
+    #    with tf.name_scope('summaries'):
+    #        tf.summary.histogram('conv1W', conv1W)
+    #        tf.summary.histogram('conv1B', conv1B)
+    #        tf.summary.histogram('conv2W', conv2W)
+    #        tf.summary.histogram('conv2B', conv2B)
+    #        tf.summary.histogram('conv3W', conv3W)
+    #        tf.summary.histogram('conv3B', conv3B)
+    #        tf.summary.histogram('conv4W', conv4W)
+    #        tf.summary.histogram('conv4B', conv4B)
+    #        tf.summary.histogram('conv5W', conv5W)
+    #        tf.summary.histogram('conv5B', conv5B)
 
