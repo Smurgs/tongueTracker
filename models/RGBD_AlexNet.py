@@ -13,7 +13,7 @@ def get_train_vars(): return None
 def assign_variable_values(sess): pass
 
 
-def get_model_name(): return 'RGBD_AlexNet2e'
+def get_model_name(): return 'RGBD_AlexNet2f'
 
 
 def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
@@ -25,15 +25,16 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
     with tf.variable_scope('model'):
         with tf.variable_scope('conv_variables'):
             with tf.device('/cpu:0'):
-                conv1W = tf.get_variable('conv1W', shape=[11, 11, 4, 96], initializer=tf.contrib.layers.xavier_initializer())
+                reg = tf.contrib.layers.l2_regularizer(scale=0.1)
+                conv1W = tf.get_variable('conv1W', shape=[11, 11, 4, 96], initializer=tf.contrib.layers.xavier_initializer(), regularizer=reg)
                 conv1B = tf.get_variable('conv1B', shape=[96], initializer=tf.zeros_initializer())
-                conv2W = tf.get_variable('conv2W', shape=[5, 5, 96, 256], initializer=tf.contrib.layers.xavier_initializer())
+                conv2W = tf.get_variable('conv2W', shape=[5, 5, 96, 256], initializer=tf.contrib.layers.xavier_initializer(), regularizer=reg)
                 conv2B = tf.get_variable('conv2B', shape=[256], initializer=tf.zeros_initializer())
-                conv3W = tf.get_variable('conv3W', shape=[3, 3, 256, 384], initializer=tf.contrib.layers.xavier_initializer())
+                conv3W = tf.get_variable('conv3W', shape=[3, 3, 256, 384], initializer=tf.contrib.layers.xavier_initializer(), regularizer=reg)
                 conv3B = tf.get_variable('conv3B', shape=[384], initializer=tf.zeros_initializer())
-                conv4W = tf.get_variable('conv4W', shape=[3, 3, 384, 384], initializer=tf.contrib.layers.xavier_initializer())
+                conv4W = tf.get_variable('conv4W', shape=[3, 3, 384, 384], initializer=tf.contrib.layers.xavier_initializer(), regularizer=reg)
                 conv4B = tf.get_variable('conv4B', shape=[384], initializer=tf.zeros_initializer())
-                conv5W = tf.get_variable('conv5W', shape=[3, 3, 384, 256], initializer=tf.contrib.layers.xavier_initializer())
+                conv5W = tf.get_variable('conv5W', shape=[3, 3, 384, 256], initializer=tf.contrib.layers.xavier_initializer(), regularizer=reg)
                 conv5B = tf.get_variable('conv5B', shape=[256], initializer=tf.zeros_initializer())
 
         # Build graph
@@ -59,10 +60,10 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
             model_out = tf.nn.max_pool(model_out, [1, 3, 3, 1], [1, 2, 2, 1], 'VALID')
         model_out = tf.contrib.layers.flatten(model_out)
         model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
-        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc1')
+        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc1', weights_regularizer=reg)
         model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
-        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc2')
-        model_out = tf.contrib.layers.fully_connected(model_out, 7, reuse=reuse, scope='fc3', activation_fn=None)
+        model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc2', weights_regularizer=reg)
+        model_out = tf.contrib.layers.fully_connected(model_out, 7, reuse=reuse, scope='fc3', activation_fn=None, weights_regularizer=reg)
 
     # Inference
     with tf.variable_scope('inference'):
@@ -70,7 +71,10 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
 
     # Loss
     with tf.variable_scope('loss'):
-        tf.losses.softmax_cross_entropy(y, model_out)
+        loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=y, labels=model_out)
+        loss += tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+        tf.losses.add_loss(loss)
+        #tf.losses.softmax_cross_entropy(y, model_out)
 
     # Accuracy
     with tf.variable_scope('accuracy'):
