@@ -71,7 +71,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
 
     # Loss
     with tf.variable_scope('loss'):
-        loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=y, labels=model_out)
+        loss = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits_v2(logits=y, labels=model_out))
         loss += tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
         tf.losses.add_loss(loss)
         #tf.losses.softmax_cross_entropy(y, model_out)
