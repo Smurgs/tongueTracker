@@ -13,7 +13,7 @@ def get_train_vars(): return None
 def assign_variable_values(sess): pass
 
 
-def get_model_name(): return 'RGBD_AlexNet2f'
+def get_model_name(): return 'RGBD_AlexNet2g'
 
 
 def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
@@ -25,7 +25,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
     with tf.variable_scope('model'):
         with tf.variable_scope('conv_variables'):
             with tf.device('/cpu:0'):
-                reg = tf.contrib.layers.l2_regularizer(scale=0.1)
+                reg = tf.contrib.layers.l2_regularizer(scale=0.2)
                 conv1W = tf.get_variable('conv1W', shape=[11, 11, 4, 96], initializer=tf.contrib.layers.xavier_initializer(), regularizer=reg)
                 conv1B = tf.get_variable('conv1B', shape=[96], initializer=tf.zeros_initializer())
                 conv2W = tf.get_variable('conv2W', shape=[5, 5, 96, 256], initializer=tf.contrib.layers.xavier_initializer(), regularizer=reg)
