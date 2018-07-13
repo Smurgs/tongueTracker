@@ -9,8 +9,8 @@ import tensorflow as tf
 from tensorflow.python.client import device_lib
 
 import models.RGB_AlexNet
-import models.RGB_AlexNet_Pretrained
-import models.RGB_AlexNet_Finetune
+import models.RGB_AlexNet_Pretrained_Bvlc
+import models.RGB_AlexNet_Finetune_Bvlc
 import models.RGBD_AlexNet
 import models.RGBD_AlexNet_Pretrained
 import models.RGB_Inception
@@ -19,8 +19,8 @@ import models.RGBD_Inception
 states = ['mouth_closed', 'mouth_open', 'tongue_down', 'tongue_left', 'tongue_middle', 'tongue_right', 'tongue_up']
 
 models = {'RGB_AlexNet': models.RGB_AlexNet,
-          'RGB_AlexNet_Pretrained': models.RGB_AlexNet_Pretrained,
-          'RGB_AlexNet_Finetune': models.RGB_AlexNet_Finetune,
+          'RGB_AlexNet_Pretrained': models.RGB_AlexNet_Pretrained_Bvlc,
+          'RGB_AlexNet_Finetune': models.RGB_AlexNet_Finetune_Bvlc,
           'RGBD_AlexNet': models.RGBD_AlexNet,
           'RGBD_AlexNet_Pretrained': models.RGBD_AlexNet_Pretrained,
           'RGB_Inception': models.RGB_Inception,

@@ -7,5 +7,6 @@ __pycache__/
 participants.txt
 slurm*
 models/alexnet_weights.h5
+models/bvlc_alexnet.npy
 models/inception_v3.ckpt
 config
