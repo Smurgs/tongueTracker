@@ -3,10 +3,13 @@ import json
 import time
 import shutil
 import random
+import itertools
 
 import numpy as np
+from sklearn.metrics import confusion_matrix
 import tensorflow as tf
 from tensorflow.python.client import device_lib
+from matplotlib import pyplot as plt
 
 import models.RGB_AlexNet
 import models.RGB_AlexNet_Pretrained_Bvlc
@@ -133,6 +136,7 @@ class ModelManager(object):
                         rgb_x, depth_x, y = dataset_iterator.get_next()
                         tf.identity(rgb_x, name='rgb_x')
                         tf.identity(depth_x, name='depth_x')
+                        tf.identity(y, name='y')
 
                         # Build instance of model
                         self.model.build_model(rgb_x, depth_x, y, self.batch_size, x != 0, training_ph)
@@ -267,13 +271,42 @@ class ModelManager(object):
         print('Running test')
         rgb, depth, state = self.feed_from_annotation(self.dataset_dir + self.test_annotations)
         self.dataset_init(rgb, depth, state)
+        inferences = []
         accs = []
         while True:
             try:
-                accs.append(self.sess.run([self.avg_acc_op], feed_dict={self.lr_ph: 0, self.training_ph: False}))
+                logits, acc = self.sess.run([self.inference_op, self.avg_acc_op],
+                                          feed_dict={self.lr_ph: 0, self.training_ph: False})
+                inference = np.argmax(logits, axis=-1)
+                inferences.append(inference)
+                accs.append(acc)
             except tf.errors.OutOfRangeError:
                 break
-        print('Dataset accuracy %.4f' % np.mean(accs))
+        print('Test accuracy %.4f' % np.mean(accs))
+
+        print('Confusion matrix')
+        predictions = np.concatenate(inferences).tolist()
+        predictions = [states[x] for x in predictions]
+        state = [states[x] for x in state]
+        cm = confusion_matrix(state, predictions, states)
+        plt.figure()
+        plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+        plt.title('Confusion Matrix')
+        plt.colorbar()
+        tick_marks = np.arange(len(states))
+        plt.xticks(tick_marks, states, rotation=45)
+        plt.yticks(tick_marks, states)
+
+        thresh = cm.max() / 2.
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(j, i, format(cm[i, j], 'd'),
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
+        plt.tight_layout()
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        plt.savefig(self.save_dir + self.model.get_model_name() +'/confusion_matrix.png')
 
     def inference(self):
         # TODO: Make it use dynamic annotation file, handle one without state and crop mode
@@ -290,7 +323,7 @@ class ModelManager(object):
         print('State is %d' % state)
 
         self.dataset_init([rgb_path], [depth_path], [state])
-        inference, acc = self.sess.run([self.inference_op(), self.inference_acc_op],
+        inference, acc = self.sess.run([self.inference_op, self.inference_acc_op],
                                        feed_dict={self.lr_ph: 0, self.training_ph: False})
         print('Inference: ' + str(inference))
         print('Accuracy: %.4f' % acc)
