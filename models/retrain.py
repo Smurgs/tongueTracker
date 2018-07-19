@@ -225,7 +225,7 @@ def create_image_lists(image_dir, testing_percentage, validation_percentage):
           validation_images.append(base_name)
       elif '007_0' in file_name and 'rgb' in file_name:
           testing_images.append(base_name)
-      else:
+      elif 'rgb' in file_name:
           training_images.append(base_name)
     result[label_name] = {
         'dir': dir_name,
