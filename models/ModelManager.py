@@ -275,7 +275,7 @@ class ModelManager(object):
         accs = []
         while True:
             try:
-                logits, acc = self.sess.run([self.inference_op, self.avg_acc_op],
+                logits, acc = self.sess.run([self.inference_op, self.inference_acc_op],
                                           feed_dict={self.lr_ph: 0, self.training_ph: False})
                 inference = np.argmax(logits, axis=-1)
                 inferences.append(inference)
