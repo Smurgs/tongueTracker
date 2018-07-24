@@ -16,7 +16,7 @@ def assign_variable_values(sess): pass
 def get_model_name(): return 'RGB_AlexNet2b'
 
 
-def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
+def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph, outputs):
 
     # Create variables
     with tf.variable_scope('model'):
@@ -60,7 +60,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc1', weights_regularizer=reg)
         model_out = tf.layers.dropout(model_out, 0.5, training=training_ph)
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=reuse, scope='fc2', weights_regularizer=reg)
-        model_out = tf.contrib.layers.fully_connected(model_out, 7, reuse=reuse, scope='fc3', activation_fn=None, weights_regularizer=reg)
+        model_out = tf.contrib.layers.fully_connected(model_out, outputs, reuse=reuse, scope='fc3', activation_fn=None, weights_regularizer=reg)
 
     # Inference
     with tf.variable_scope('inference'):

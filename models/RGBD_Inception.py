@@ -437,7 +437,7 @@ def assign_variable_values(sess):
 def get_model_name(): return 'RGBD_Inception2'
 
 
-def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
+def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph, outputs):
 
     name_scope = tf.contrib.framework.get_name_scope()
 
@@ -472,7 +472,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
                 with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
                     inception.inception_v3(rgb_out, 1001)
             rgb_aux_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/rgb_model/rgb_inception/InceptionV3/AuxLogits/Conv2d_2a_5x5/Relu:0')
-            rgb_aux_logits = layers.conv2d(rgb_aux_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
+            rgb_aux_logits = layers.conv2d(rgb_aux_logits, outputs, [1, 1], activation_fn=None, normalizer_fn=None,
                                            weights_initializer=trunc_normal(0.001), scope='Conv2d_2b_1x1')
             rgb_aux_logits = tf.squeeze(rgb_aux_logits)
 
@@ -489,7 +489,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
                 with tf.contrib.slim.arg_scope(inception.inception_v3_arg_scope()):
                     inception.inception_v3(depth_out, 1001)
             depth_aux_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/depth_model/depth_inception/InceptionV3/AuxLogits/Conv2d_2a_5x5/Relu:0')
-            depth_aux_logits = layers.conv2d(depth_aux_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
+            depth_aux_logits = layers.conv2d(depth_aux_logits, outputs, [1, 1], activation_fn=None, normalizer_fn=None,
                                              weights_initializer=trunc_normal(0.001), scope='Conv2d_2b_1x1')
             depth_aux_logits = tf.squeeze(depth_aux_logits)
 
@@ -501,10 +501,10 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
             model_logits = layers.conv2d(model_logits, 4096, [1, 1], weights_initializer=trunc_normal(0.001), scope='fc1')
             model_logits = tf.layers.dropout(model_logits, 0.5, training=training_ph)
             model_logits = layers.conv2d(model_logits, 4096, [1, 1], weights_initializer=trunc_normal(0.001), scope='fc2')
-            model_logits = layers.conv2d(model_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
+            model_logits = layers.conv2d(model_logits, outputs, [1, 1], activation_fn=None, normalizer_fn=None,
                                          weights_initializer=trunc_normal(0.001), scope='fc3')
             model_logits = tf.squeeze(model_logits)
-            model_logits = tf.reshape(model_logits, [-1, 7])
+            model_logits = tf.reshape(model_logits, [-1, outputs])
 
     # Inference
     with tf.variable_scope('inference'):

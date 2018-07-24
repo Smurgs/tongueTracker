@@ -424,7 +424,7 @@ def assign_variable_values(sess):
 def get_model_name(): return 'RGB_Inception2'
 
 
-def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
+def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph, outputs):
 
     name_scope = tf.contrib.framework.get_name_scope()
 
@@ -447,10 +447,10 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
 
         model_logits = tf.get_default_graph().get_tensor_by_name(name_scope + '/model/rgb_inception/InceptionV3/Logits/Dropout_1b/dropout/mul:0')
         model_logits = layers.conv2d(model_logits, 2048, [1, 1], weights_initializer=trunc_normal(0.001), scope='fc1')
-        model_logits = layers.conv2d(model_logits, 7, [1, 1], activation_fn=None, normalizer_fn=None,
+        model_logits = layers.conv2d(model_logits, outputs, [1, 1], activation_fn=None, normalizer_fn=None,
                                      weights_initializer=trunc_normal(0.001), scope='fc2')
         model_logits = tf.squeeze(model_logits)
-        model_logits = tf.reshape(model_logits, [-1, 7])
+        model_logits = tf.reshape(model_logits, [-1, outputs])
 
     # Inference
     with tf.variable_scope('inference'):

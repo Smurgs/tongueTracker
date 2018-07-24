@@ -47,6 +47,18 @@ class ModelManager(object):
         self.test_annotations = data['test_annotations']
         self.save_dir = data['save_dir']
         self.max_saves = data['max_saves']
+        self.number_outputs = data['number_outputs']
+        if self.number_outputs == 7:
+            self.states = ['mouth_closed', 'mouth_open', 'tongue_down', 'tongue_left', 'tongue_middle', 'tongue_right', 'tongue_up']
+        elif self.number_outputs == 6:
+            self.states = ['mouth_closed', 'mouth_open', 'tongue_down', 'tongue_left', 'tongue_right', 'tongue_up']
+            self.train_annotations = self.train_annotations[:-4] + '_6classes.txt'
+            self.val_annotations = self.val_annotations[:-4] + '_6classes.txt'
+            self.test_annotations = self.test_annotations[:-4] + '_6classes.txt'
+        else:
+            self.states = None
+            print('Invalid value for number of outputs, can only be 6 or 7')
+            exit(1)
 
         # Prepare model
         session_config = tf.ConfigProto(allow_soft_placement=True)
@@ -89,7 +101,7 @@ class ModelManager(object):
             depth_img = tf.cast(depth_img, tf.float32)
             depth_img = tf.reshape(depth_img, [227, 227, 1])
 
-            label = tf.one_hot(state, 7)
+            label = tf.one_hot(state, self.number_outputs)
             return rgb_img, depth_img, label
 
         dataset = dataset.map(parse_function).batch(batch_size_ph)
@@ -139,7 +151,7 @@ class ModelManager(object):
                         tf.identity(y, name='y')
 
                         # Build instance of model
-                        self.model.build_model(rgb_x, depth_x, y, self.batch_size, x != 0, training_ph)
+                        self.model.build_model(rgb_x, depth_x, y, self.batch_size, x != 0, training_ph, self.number_outputs)
 
         # Average gradients from all devices
         print('Building train op')

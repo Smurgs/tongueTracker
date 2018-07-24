@@ -18,7 +18,7 @@ def assign_variable_values(sess): pass
 def get_model_name(): return 'RGB_AlexNet_Finetune2a'
 
 
-def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
+def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph, outputs):
 
     # Load pretrained variables
     f = np.load(open('models/bvlc_alexnet.npy', 'rb'), encoding="latin1").item()
@@ -108,7 +108,7 @@ def build_model(rgb_x, depth_x, y, batch_size, reuse, training_ph):
         model_out = tf.contrib.layers.fully_connected(model_out, 4096, reuse=True, scope='fc2')
 
         # Fc3
-        model_out = tf.contrib.layers.fully_connected(model_out, 7, reuse=reuse, scope='fc3', activation_fn=None)
+        model_out = tf.contrib.layers.fully_connected(model_out, outputs, reuse=reuse, scope='fc3', activation_fn=None)
 
     # Inference
     with tf.variable_scope('inference'):
