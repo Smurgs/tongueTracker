@@ -16,6 +16,7 @@ import models.RGB_AlexNet_Pretrained_Bvlc
 import models.RGB_AlexNet_Finetune_Bvlc
 import models.RGBD_AlexNet
 import models.RGBD_AlexNet_Finetune_Bvlc
+import models.RGBD_AlexNet_Late_Single_Channel
 import models.RGB_Inception
 import models.RGBD_Inception
 
@@ -25,6 +26,7 @@ models = {'RGB_AlexNet': models.RGB_AlexNet,
           'RGB_AlexNet_Finetune': models.RGB_AlexNet_Finetune_Bvlc,
           'RGBD_AlexNet': models.RGBD_AlexNet,
           'RGBD_AlexNet_Finetune': models.RGBD_AlexNet_Finetune_Bvlc,
+          'RGBD_AlexNet_Single_Channel': models.RGBD_AlexNet_Late_Single_Channel,
           'RGB_Inception': models.RGB_Inception,
           'RGBD_Inception': models.RGBD_Inception}
 
@@ -190,6 +192,7 @@ class ModelManager(object):
         # Check if this iteration has already been saved
         saves = os.listdir("%s/%s" % (self.save_dir, self.model.get_model_name()))
         saves = [x for x in saves if 'events' not in x]
+        saves = [x for x in saves if 'config' not in x]
         if len(saves) > 0:
             save_numbers = [int(x.split('-')[-1]) for x in saves]
             if tf.train.global_step(self.sess, tf.train.get_global_step()) in save_numbers:
@@ -238,6 +241,7 @@ class ModelManager(object):
         merged_summaries = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/train/', self.sess.graph)
         val_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/validation/', self.sess.graph)
+        shutil.copy('config', self.save_dir + self.model.get_model_name() + '/config')
 
         # Train for a bunch of epochs
         print('Training model for %d epochs' % self.train_epochs)
