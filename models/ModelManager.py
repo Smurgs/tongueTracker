@@ -19,7 +19,6 @@ import models.RGBD_AlexNet_Finetune_Bvlc
 import models.RGB_Inception
 import models.RGBD_Inception
 
-states = ['mouth_closed', 'mouth_open', 'tongue_down', 'tongue_left', 'tongue_middle', 'tongue_right', 'tongue_up']
 
 models = {'RGB_AlexNet': models.RGB_AlexNet,
           'RGB_AlexNet_Pretrained': models.RGB_AlexNet_Pretrained_Bvlc,
@@ -221,7 +220,7 @@ class ModelManager(object):
         rgb_path, depth_path, state, _ = zip(*annotations)
         rgb_path = [self.dataset_parent_dir + x[3:] for x in rgb_path]
         depth_path = [self.dataset_parent_dir + x[3:] for x in depth_path]
-        state = [states.index(x) for x in state]
+        state = [self.states.index(x) for x in state]
         return rgb_path, depth_path, state
 
     def add_static_summary(self, writer, identifier, value):
@@ -298,16 +297,16 @@ class ModelManager(object):
 
         print('Confusion matrix')
         predictions = np.concatenate(inferences).tolist()
-        predictions = [states[x] for x in predictions]
-        state = [states[x] for x in state]
-        cm = confusion_matrix(state, predictions, states)
+        predictions = [self.states[x] for x in predictions]
+        state = [self.states[x] for x in state]
+        cm = confusion_matrix(state, predictions, self.states)
         plt.figure()
         plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
         plt.title('Confusion Matrix')
         plt.colorbar()
-        tick_marks = np.arange(len(states))
-        plt.xticks(tick_marks, states, rotation=45)
-        plt.yticks(tick_marks, states)
+        tick_marks = np.arange(len(self.states))
+        plt.xticks(tick_marks, self.states, rotation=45)
+        plt.yticks(tick_marks, self.states)
 
         thresh = cm.max() / 2.
         for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
@@ -330,7 +329,7 @@ class ModelManager(object):
         rgb_path, depth_path, state, _ = annotations[rand].strip().split(',')
         rgb_path = rgb_path[3:]
         depth_path = depth_path[3:]
-        state = states.index(state)
+        state = self.states.index(state)
 
         print('State is %d' % state)
 
