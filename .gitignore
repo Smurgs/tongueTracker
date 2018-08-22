@@ -1,6 +1,7 @@
 tongue_dataset/
 notes/
 logs/
+cascade_detector/MouthDataSet/
 __pycache__/
 *.pyc
 .idea/

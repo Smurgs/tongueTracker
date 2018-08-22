@@ -1,9 +1,11 @@
 import os.path
+import numpy as np
+import cv2
 from PIL import Image
 from PIL import ImageFilter
 
-cropped_annotation = '../tongue_dataset/cropped/annotations.txt'
-scaled_annotation = '../tongue_dataset/scaled/annotations.txt'
+cropped_annotation = '../tongue_dataset/cropped2/annotations.txt'
+scaled_annotation = '../tongue_dataset/scaled2/annotations.txt'
 target_width = 227
 target_height = 227
 
@@ -18,8 +20,8 @@ def main():
     count = 0
     for annotation in annotations:
         src_rgb, src_depth, state, mode = annotation
-        dest_rgb = src_rgb.replace('cropped', 'scaled')
-        dest_depth = src_depth.replace('cropped', 'scaled')
+        dest_rgb = src_rgb.replace('cropped2', 'scaled2')
+        dest_depth = src_depth.replace('cropped2', 'scaled2')
 
         count += 1
         if count % int(total / 100) == 0:
@@ -69,8 +71,8 @@ def main():
             fg_top_left_corner = (0, int((target_height - rgb_fg.size[1]) / 2))
 
         # Blur background
-        rgb_bg = rgb_bg.filter(ImageFilter.GaussianBlur(2))
-        depth_bg = depth_bg.filter(ImageFilter.GaussianBlur(2))
+        rgb_bg = Image.fromarray(cv2.GaussianBlur(np.asanyarray(rgb_bg), (5, 5), 0))
+        depth_bg = Image.fromarray(cv2.GaussianBlur(np.asanyarray(depth_bg).astype(np.uint16), (5, 5), 0)).convert(mode='I')
 
         # Copy fg onto bg
         rgb_bg.paste(rgb_fg, fg_top_left_corner)

@@ -1,4 +1,4 @@
-dataset_dir = '../tongue_dataset/scaled/'
+dataset_dir = '../tongue_dataset/scaled2/'
 
 
 def removeTongueMiddle(file_name):

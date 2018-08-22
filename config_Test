@@ -1,0 +1,32 @@
+{
+    "train_epochs": 3,
+    "train_epochs_description": "Integer - Number of epochs to train for",
+
+    "dataset_parent_dir": "/localdisk/tongueTracker/cascade_detector/",
+    "dataset_parent_dir_description": "String - Path to directory above 'tongue_dataset'",
+
+    "save_dir": "logs/",
+    "save_dir_description": "String - Directory to save model/run data to",
+
+    "max_saves": 2,
+    "max_saves_description": "Integer - Number of model saves to keep",
+
+    "number_outputs": 6,
+    "number_outputs_description": "Integer - Number of output classes to have, value must be 6 or 7",
+
+    "train_annotations": "train_annotations2.txt",
+    "train_annotations_description": "String - Name of train annotations file",
+
+    "val_annotations": "val_annotations2.txt",
+    "val_annotations_description": "String - Name of val annotations file",
+
+    "test_annotations": "test_annotations2.txt",
+    "test_annotations_description": "String - Name of test annotations file",
+
+    "cross_description": "Integer (Optional) - Instance of 15-fold cross validation to perform, value must be 1-15",
+
+    "dataset_size_limit_description": "Integer (Optional) - Limit dataset to certain size",
+
+    "batch_size": 5,
+    "batch_size_description": "Integer (Optional) - Specify batch size other than model default"
+}

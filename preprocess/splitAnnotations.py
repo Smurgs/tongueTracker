@@ -4,7 +4,7 @@ train_ratio = 0.8
 validation_ratio = 0.1
 test_ratio = 0.1
 
-annotations_path = '../tongue_dataset/scaled/annotations.txt'
+annotations_path = '../tongue_dataset/scaled2/annotations.txt'
 
 
 def v1():

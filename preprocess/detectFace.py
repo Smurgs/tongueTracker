@@ -7,10 +7,11 @@ import argparse
 import cv2
 import numpy as np
 import tensorflow as tf
+from PIL import Image
 
 frame_annotations = '../tongue_dataset/frames/annotations.txt'
-not_cropped_annotations = '../tongue_dataset/frames/not_cropped.txt'
-cropped_annotations = '../tongue_dataset/cropped/annotations.txt'
+not_cropped_annotations = '../tongue_dataset/frames/not_cropped2.txt'
+cropped_annotations = '../tongue_dataset/cropped2/annotations.txt'
 path_to_ckpt = 'frozen_inference_graph_face.pb'
 
 detection_graph = tf.Graph()
@@ -49,7 +50,7 @@ def auto_detect_face(image, thresh=0.5):
 def get_absolute_dims(img, face):
     box = tuple(face.tolist())
     ymin, xmin, ymax, xmax = box
-    im_height, im_width, _ = img.shape
+    im_height, im_width, *_ = img.shape
     (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width),
                                   int(ymin * im_height), int(ymax * im_height))
     bottom = bottom + int((bottom - top) * 0.15)  # Add 15% to bottom of bounding box
@@ -89,8 +90,8 @@ def main(mode):
             print('Progress: %d' % (count / int(total/100)))
 
         # Continue if image was already cropped or rejected
-        dest_rgb = src_rgb.replace('frames', 'cropped')
-        dest_depth = src_depth.replace('frames', 'cropped')
+        dest_rgb = src_rgb.replace('frames', 'cropped2')
+        dest_depth = src_depth.replace('frames', 'cropped2')
         reject_rgb = src_rgb.replace('frames', 'rejected')
         reject_depth = src_depth.replace('frames', 'rejected')
         if os.path.isfile(dest_rgb) or os.path.isfile(reject_rgb):
@@ -99,7 +100,7 @@ def main(mode):
 
         # Load image (rbg and depth)
         rgb_img = cv2.imread(src_rgb)
-        depth_img = cv2.imread(src_depth)
+        depth_img = cv2.imread(src_depth, -1)
 
         if mode == 'auto':
             # Make prediction (score >= 0.25)
@@ -130,6 +131,12 @@ def main(mode):
             elif ret != 106:                # 'j' key
                 skipped_count += 1
                 continue
+
+        # Crop and resize depth image to align with rgb image
+        depth_img = Image.fromarray(depth_img).convert(mode='I')
+        depth_img = depth_img.crop((120, 90, 520, 390))
+        depth_img = depth_img.resize((640, 480))
+        depth_img = np.asanyarray(depth_img).astype(np.uint16)
 
         # Crop to lower half of face
         rgb_img = crop_lower_face(rgb_img, face)

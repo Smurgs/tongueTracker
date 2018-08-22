@@ -33,14 +33,15 @@ models = {'RGB_AlexNet': models.RGB_AlexNet,
 
 class ModelManager(object):
 
-    def __init__(self, model):
+    def __init__(self, model, config):
         # Get all configs
         self.model = models[model]
-        with open('config') as f:
+        self.config = config
+        with open(self.config) as f:
             data = json.load(f)
         self.train_epochs = data['train_epochs']
         self.dataset_parent_dir = data['dataset_parent_dir']
-        self.dataset_dir = self.dataset_parent_dir + 'tongue_dataset/scaled/'
+        self.dataset_dir = self.dataset_parent_dir + 'tongue_dataset/scaled2/'
         self.dataset_size_limit = None if 'dataset_size_limit' not in data else data['dataset_size_limit']
         self.batch_size = self.model.get_batch_size() if 'batch_size' not in data else data['batch_size']
         self.train_annotations = data['train_annotations']
@@ -49,6 +50,7 @@ class ModelManager(object):
         self.save_dir = data['save_dir']
         self.max_saves = data['max_saves']
         self.number_outputs = data['number_outputs']
+        self.cross = None if 'cross' not in data else data['cross']
         if self.number_outputs == 7:
             self.states = ['mouth_closed', 'mouth_open', 'tongue_down', 'tongue_left', 'tongue_middle', 'tongue_right', 'tongue_up']
         elif self.number_outputs == 6:
@@ -98,9 +100,9 @@ class ModelManager(object):
             rgb_img = tf.reshape(rgb_img, [227, 227, 3])
 
             depth_string = tf.read_file(depth_path)
-            depth_img = tf.image.decode_png(depth_string, channels=1, dtype=tf.uint16)
+            depth_img = tf.image.decode_png(depth_string, channels=self.model.get_depth_channels(), dtype=tf.uint16)
             depth_img = tf.cast(depth_img, tf.float32)
-            depth_img = tf.reshape(depth_img, [227, 227, 1])
+            depth_img = tf.reshape(depth_img, [227, 227, self.model.get_depth_channels()])
 
             label = tf.one_hot(state, self.number_outputs)
             return rgb_img, depth_img, label
@@ -115,7 +117,7 @@ class ModelManager(object):
         if os.path.isdir(self.save_dir + self.model.get_model_name()):
             # Load latest save
             saves = os.listdir("%s/%s" % (self.save_dir, self.model.get_model_name()))
-            saves = [x for x in saves if 'events' not in x]
+            saves = [x for x in saves if self.model.get_model_name() in x]
             if len(saves) > 0:
                 saves = [(x, int(x.split('-')[-1])) for x in saves]
                 saves.sort(key=lambda tup: tup[1])
@@ -191,8 +193,7 @@ class ModelManager(object):
     def save(self):
         # Check if this iteration has already been saved
         saves = os.listdir("%s/%s" % (self.save_dir, self.model.get_model_name()))
-        saves = [x for x in saves if 'events' not in x]
-        saves = [x for x in saves if 'config' not in x]
+        saves = [x for x in saves if self.model.get_model_name() in x]
         if len(saves) > 0:
             save_numbers = [int(x.split('-')[-1]) for x in saves]
             if tf.train.global_step(self.sess, tf.train.get_global_step()) in save_numbers:
@@ -215,9 +216,7 @@ class ModelManager(object):
             saves.sort(key=lambda tup: tup[1])
             shutil.rmtree("%s%s/%s" % (self.save_dir, self.model.get_model_name(), saves[0][0]))
 
-    def feed_from_annotation(self, annotation_path):
-        with open(annotation_path) as f:
-            annotations = f.readlines()
+    def feed_from_annotation(self, annotations):
         dataset_size = len(annotations) if self.dataset_size_limit is None else self.dataset_size_limit
         annotations = [x.strip().split(',') for x in annotations[:dataset_size]]
         rgb_path, depth_path, state, _ = zip(*annotations)
@@ -231,32 +230,61 @@ class ModelManager(object):
         summary.value.add(tag=identifier, simple_value=value)
         writer.add_summary(summary, tf.train.global_step(self.sess, tf.train.get_global_step()))
 
+    def get_train_and_val_annotations(self):
+        with open(self.dataset_dir + self.train_annotations) as f:
+            orig_train_annotations = f.readlines()
+        with open(self.dataset_dir + self.val_annotations) as f:
+            orig_val_annotations = f.readlines()
+
+        if self.cross is None:
+            return orig_train_annotations, orig_val_annotations
+
+        train_participants = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15]
+        cross_train_annotations = []
+        cross_val_annotations = []
+        for line in orig_train_annotations:
+            if '/%03d_0' % train_participants[self.cross-1] in line:
+                cross_val_annotations.append(line)
+            else:
+                cross_train_annotations.append(line)
+        return cross_train_annotations, cross_val_annotations
+
+
     def train(self):
         # Get train and validation dataset feeds
-        train_rgb, train_depth, train_state = self.feed_from_annotation(self.dataset_dir + self.train_annotations)
-        val_rgb, val_depth, val_state = self.feed_from_annotation(self.dataset_dir + self.val_annotations)
+        train_annotations, val_annotations = self.get_train_and_val_annotations()
+        train_rgb, train_depth, train_state = self.feed_from_annotation(train_annotations)
+        val_rgb, val_depth, val_state = self.feed_from_annotation(val_annotations)
 
         # Setup Tensorboard stuff
-        print('Setting up summary writers')
         merged_summaries = tf.summary.merge_all()
-        train_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/train/', self.sess.graph)
-        val_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/validation/', self.sess.graph)
-        shutil.copy('config', self.save_dir + self.model.get_model_name() + '/config')
+        if self.cross is None:
+            print('Setting up summary writers')
+            train_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/train/', self.sess.graph)
+            val_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/validation/', self.sess.graph)
+            shutil.copy(self.config, self.save_dir + self.model.get_model_name() + '/' + self.config)
 
         # Train for a bunch of epochs
         print('Training model for %d epochs' % self.train_epochs)
         epoch_times = []
+        metrics = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
         for epoch in range(self.train_epochs):
 
             # Learn on training data for an epoch
             epoch_start_time = time.time()
             self.dataset_init(train_rgb, train_depth, train_state)
+            train_losses = []
+            train_accs = []
             while True:
                 try:
-                    _, summary = self.sess.run([self.train_op, merged_summaries],
-                                               feed_dict={self.lr_ph: self.model.get_learning_rate(), self.training_ph: True})
+                    _, summary, loss, acc = self.sess.run([self.train_op, merged_summaries, self.avg_loss_op, self.avg_acc_op],
+                                                          feed_dict={self.lr_ph: self.model.get_learning_rate(),
+                                                                     self.training_ph: True})
+                    train_losses.append(loss)
+                    train_accs.append(acc)
                 except tf.errors.OutOfRangeError:
-                    train_writer.add_summary(summary, tf.train.global_step(self.sess, tf.train.get_global_step()))
+                    if self.cross is None:
+                        train_writer.add_summary(summary, tf.train.global_step(self.sess, tf.train.get_global_step()))
                     break
 
             # Collect loss and acc on validation dataset
@@ -276,15 +304,30 @@ class ModelManager(object):
             epoch_end_time = time.time() - epoch_start_time
             epoch_times.append(epoch_end_time)
             print('Done epoch # %d in %d seconds' % (epoch, epoch_end_time))
-            self.add_static_summary(train_writer, 'summaries/epoch_time', epoch_end_time)
-            self.add_static_summary(val_writer, 'summaries/avg_loss', np.mean(val_losses))
-            self.add_static_summary(val_writer, 'summaries/avg_acc', np.mean(val_accs))
-            self.save()
+            metrics['train_loss'].append(np.mean(train_losses))
+            metrics['train_acc'].append(np.mean(train_accs))
+            metrics['val_loss'].append(np.mean(val_losses))
+            metrics['val_acc'].append(np.mean(val_accs))
+            if self.cross is None:
+                self.add_static_summary(train_writer, 'summaries/epoch_time', epoch_end_time)
+                self.add_static_summary(val_writer, 'summaries/avg_loss', np.mean(val_losses))
+                self.add_static_summary(val_writer, 'summaries/avg_acc', np.mean(val_accs))
+                self.save()
         print('Finished training %d epochs in %d seconds' % (self.train_epochs, int(np.sum(epoch_times))))
+        if self.cross is not None:
+            np.savez(self.save_dir + '/' + self.model.get_model_name() + '_' + str(self.cross),
+                     train_loss=np.asanyarray(metrics['train_loss']),
+                     train_acc=np.asanyarray(metrics['train_acc']),
+                     val_loss=np.asanyarray(metrics['val_loss']),
+                     val_acc=np.asanyarray(metrics['val_acc']))
 
-    def test(self):
+    def test(self, test_annotations_path=None):
         print('Running test')
-        rgb, depth, state = self.feed_from_annotation(self.dataset_dir + self.test_annotations)
+        if test_annotations_path is None:
+            test_annotations_path = self.dataset_dir + self.test_annotations
+        with open(test_annotations_path) as f:
+            test_annotations = f.readlines()
+        rgb, depth, state = self.feed_from_annotation(test_annotations)
         self.dataset_init(rgb, depth, state)
         inferences = []
         accs = []

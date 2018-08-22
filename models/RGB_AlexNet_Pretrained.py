@@ -16,6 +16,9 @@ def get_train_vars():
     return train_vars
 
 
+def get_depth_channels(): return 1
+
+
 def assign_variable_values(sess): pass
 
 

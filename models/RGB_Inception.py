@@ -21,6 +21,9 @@ def get_train_vars():
     return train_vars
 
 
+def get_depth_channels(): return 1
+
+
 def assign_variable_values(sess):
     pretrained_variables = ['InceptionV3/Conv2d_1a_3x3/weights',
                             'InceptionV3/Conv2d_1a_3x3/BatchNorm/beta',
