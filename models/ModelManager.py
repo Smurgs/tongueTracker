@@ -239,7 +239,7 @@ class ModelManager(object):
         if self.cross is None:
             return orig_train_annotations, orig_val_annotations
 
-        train_participants = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15]
+        train_participants = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17]
         cross_train_annotations = []
         cross_val_annotations = []
         for line in orig_train_annotations:
