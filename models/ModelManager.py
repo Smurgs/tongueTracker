@@ -5,6 +5,7 @@ import shutil
 import random
 import itertools
 
+import cv2
 import numpy as np
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
@@ -19,6 +20,7 @@ import models.RGBD_AlexNet_Finetune_Bvlc
 import models.RGBD_AlexNet_Late_Single_Channel
 import models.RGB_Inception
 import models.RGBD_Inception
+import models.RGBD_AlexNet_Colormap
 
 
 models = {'RGB_AlexNet': models.RGB_AlexNet,
@@ -27,6 +29,7 @@ models = {'RGB_AlexNet': models.RGB_AlexNet,
           'RGBD_AlexNet': models.RGBD_AlexNet,
           'RGBD_AlexNet_Finetune': models.RGBD_AlexNet_Finetune_Bvlc,
           'RGBD_AlexNet_Single_Channel': models.RGBD_AlexNet_Late_Single_Channel,
+          'RGBD_AlexNet_Colormap': models.RGBD_AlexNet_Colormap,
           'RGB_Inception': models.RGB_Inception,
           'RGBD_Inception': models.RGBD_Inception}
 
@@ -93,21 +96,42 @@ class ModelManager(object):
         batch_size_ph = tf.placeholder(tf.int64, name='batch_size_placeholder')
         dataset = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(rgb_ph), tf.convert_to_tensor(depth_ph), tf.convert_to_tensor(state_ph)))
 
-        def parse_function(rgb_path, depth_path, state):
+        def rgb_map(rgb_path, depth_path, state):
             rgb_string = tf.read_file(rgb_path)
             rgb_img = tf.image.decode_png(rgb_string, channels=3, dtype=tf.uint16)
             rgb_img = tf.cast(rgb_img, tf.float32)
             rgb_img = tf.reshape(rgb_img, [227, 227, 3])
+            return rgb_img, depth_path, state
 
+        def depth_map(rgb_img, depth_path, state):
             depth_string = tf.read_file(depth_path)
             depth_img = tf.image.decode_png(depth_string, channels=self.model.get_depth_channels(), dtype=tf.uint16)
+            return rgb_img, depth_img, state
+
+        def depth_colormap(rgb_img, depth_path, state):
+            depth_img = cv2.imread(depth_path.decode(), -1)
+            depth_img = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=0.03), cv2.COLORMAP_JET)
+            return rgb_img, depth_img, state
+
+        def depth_resize_map(rgb_img, depth_img, state):
             depth_img = tf.cast(depth_img, tf.float32)
             depth_img = tf.reshape(depth_img, [227, 227, self.model.get_depth_channels()])
+            return rgb_img, depth_img, state
 
+        def label_map(rgb_img, depth_img, state):
             label = tf.one_hot(state, self.number_outputs)
             return rgb_img, depth_img, label
 
-        dataset = dataset.map(parse_function).batch(batch_size_ph)
+        if self.model.get_model_name() == 'RGBD_AlexNet_Colormap2':
+            dataset = dataset.map(lambda rgb_img, depth_path, state: tuple(tf.py_func(depth_colormap,
+                                                                                      [rgb_img, depth_path, state],
+                                                                                      [tf.string, tf.uint8, tf.int32])))
+        else:
+            dataset = dataset.map(depth_map)
+        dataset = dataset.map(depth_resize_map)
+        dataset = dataset.map(rgb_map)
+        dataset = dataset.map(label_map)
+        dataset = dataset.batch(batch_size_ph)
         iterator = tf.data.Iterator.from_structure(dataset.output_types, dataset.output_shapes)
         iterator.make_initializer(dataset, name='dataset_init')
         return iterator

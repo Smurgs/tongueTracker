@@ -2,7 +2,7 @@
     "train_epochs": 3,
     "train_epochs_description": "Integer - Number of epochs to train for",
 
-    "dataset_parent_dir": "/localdisk/tongueTracker/cascade_detector/",
+    "dataset_parent_dir": "/localdisk/tongueTracker/",
     "dataset_parent_dir_description": "String - Path to directory above 'tongue_dataset'",
 
     "save_dir": "logs/",
