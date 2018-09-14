@@ -67,8 +67,10 @@ class ModelManager(object):
             exit(1)
 
         # Prepare model
+        print('Starting tensorflow session')
         session_config = tf.ConfigProto(allow_soft_placement=True)
         self.sess = tf.Session(config=session_config)
+        print('Preparing graph')
         self.prepare_graph()
 
         # Get handles to important tensors
