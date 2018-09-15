@@ -63,14 +63,14 @@ class ModelManager(object):
             self.test_annotations = self.test_annotations[:-4] + '_6classes.txt'
         else:
             self.states = None
-            print('Invalid value for number of outputs, can only be 6 or 7')
+            self.log('Invalid value for number of outputs, can only be 6 or 7')
             exit(1)
 
         # Prepare model
-        print('Starting tensorflow session')
+        self.log('Starting tensorflow session')
         session_config = tf.ConfigProto(allow_soft_placement=True)
         self.sess = tf.Session(config=session_config)
-        print('Preparing graph')
+        self.log('Preparing graph')
         self.prepare_graph()
 
         # Get handles to important tensors
@@ -83,6 +83,16 @@ class ModelManager(object):
         self.training_ph = tf.get_default_graph().get_tensor_by_name('training_ph:0')
         self.add_scalar_summaries()
 
+    def log(self, msg):
+        logfile = self.save_dir + self.model.get_model_name() + '_' + str(self.number_outputs) + 'way'
+        if self.cross is not None: 
+            logfile += '_cross' + str(self.cross)
+        logfile += '.txt'
+
+        print(msg)
+        with open(logfile, 'a') as f:
+            f.write(msg + '\n')
+        
     def dataset_init(self, rgb_paths, depth_paths, state_values):
         init_op = tf.get_default_graph().get_operation_by_name('dataset_init')
         rgb_ph = tf.get_default_graph().get_tensor_by_name('rgb_placeholder:0')
@@ -148,29 +158,29 @@ class ModelManager(object):
                 saves = [(x, int(x.split('-')[-1])) for x in saves]
                 saves.sort(key=lambda tup: tup[1])
                 latest_save = ('%s%s/%s' % (self.save_dir, self.model.get_model_name(), saves[-1][0]))
-                print('Loading model: %s' % latest_save)
+                self.log('Loading model: %s' % latest_save)
                 tf.saved_model.loader.load(self.sess, [tf.saved_model.tag_constants.SERVING], latest_save)
                 return
 
-        print('Building model')
+        self.log('Building model')
 
         # Build dataset and get iterator
-        print('Creating dataset iterator')
+        self.log('Creating dataset iterator')
         dataset_iterator = self.create_dataset()
 
         # Get device list
-        print('Getting device list')
+        self.log('Getting device list')
         local_device_protos = device_lib.list_local_devices()
         devices = [x.name for x in local_device_protos if x.device_type == 'GPU']
         devices = ['/gpu:%d' % x for x in range(len(devices))]
         if len(devices) < 1:
             devices.append('/cpu:0')
-        print('Devices found: ' + str(devices))
+        self.log('Devices found: ' + str(devices))
 
         # Build model on each available device
         training_ph = tf.placeholder(tf.bool, name='training_ph')
         for x in range(len(devices)):
-            print('Building tower %d' % x)
+            self.log('Building tower %d' % x)
             with tf.device(devices[x]):
                 with tf.name_scope('tower_%d' % x):
                     with tf.variable_scope(tf.get_variable_scope(), reuse=x != 0):
@@ -183,7 +193,7 @@ class ModelManager(object):
                         self.model.build_model(rgb_x, depth_x, y, self.batch_size, x != 0, training_ph, self.number_outputs)
 
         # Average gradients from all devices
-        print('Building train op')
+        self.log('Building train op')
         learning_rate = tf.placeholder(tf.float32, name='learning_rate')
         with tf.name_scope('average_gradients'):
             average_gradients = []
@@ -234,7 +244,7 @@ class ModelManager(object):
                                     self.model.get_model_name(),
                                     tf.train.global_step(self.sess, tf.train.get_global_step()))
         tf.saved_model.simple_save(self.sess, save_path, {'rgb_x': rgb_x, 'depth_x': depth_x}, {'inference': inference})
-        print('Saved model: %s' % save_path)
+        self.log('Saved model: %s' % save_path)
 
         # Delete oldest save if max number of saves reached
         if len(saves) >= self.max_saves:
@@ -285,13 +295,13 @@ class ModelManager(object):
         # Setup Tensorboard stuff
         merged_summaries = tf.summary.merge_all()
         if self.cross is None:
-            print('Setting up summary writers')
+            self.log('Setting up summary writers')
             train_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/train/', self.sess.graph)
             val_writer = tf.summary.FileWriter(self.save_dir + self.model.get_model_name() + '/events/validation/', self.sess.graph)
             shutil.copy(self.config, self.save_dir + self.model.get_model_name() + '/' + self.config)
 
         # Train for a bunch of epochs
-        print('Training model for %d epochs' % self.train_epochs)
+        self.log('Training model for %d epochs' % self.train_epochs)
         epoch_times = []
         metrics = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
         for epoch in range(self.train_epochs):
@@ -329,7 +339,7 @@ class ModelManager(object):
             # Write summaries and save model
             epoch_end_time = time.time() - epoch_start_time
             epoch_times.append(epoch_end_time)
-            print('Done epoch # %d in %d seconds' % (epoch, epoch_end_time))
+            self.log('Done epoch # %d in %d seconds' % (epoch, epoch_end_time))
             metrics['train_loss'].append(np.mean(train_losses))
             metrics['train_acc'].append(np.mean(train_accs))
             metrics['val_loss'].append(np.mean(val_losses))
@@ -339,7 +349,7 @@ class ModelManager(object):
                 self.add_static_summary(val_writer, 'summaries/avg_loss', np.mean(val_losses))
                 self.add_static_summary(val_writer, 'summaries/avg_acc', np.mean(val_accs))
                 self.save()
-        print('Finished training %d epochs in %d seconds' % (self.train_epochs, int(np.sum(epoch_times))))
+        self.log('Finished training %d epochs in %d seconds' % (self.train_epochs, int(np.sum(epoch_times))))
         if self.cross is not None:
             np.savez(self.save_dir + '/' + self.model.get_model_name() + '_' + str(self.cross),
                      train_loss=np.asanyarray(metrics['train_loss']),
@@ -348,7 +358,7 @@ class ModelManager(object):
                      val_acc=np.asanyarray(metrics['val_acc']))
 
     def test(self, test_annotations_path=None):
-        print('Running test')
+        self.log('Running test')
         if test_annotations_path is None:
             test_annotations_path = self.dataset_dir + self.test_annotations
         with open(test_annotations_path) as f:
@@ -366,9 +376,9 @@ class ModelManager(object):
                 accs.append(acc)
             except tf.errors.OutOfRangeError:
                 break
-        print('Test accuracy %.4f' % np.mean(accs))
+        self.log('Test accuracy %.4f' % np.mean(accs))
 
-        print('Confusion matrix')
+        self.log('Confusion matrix')
         predictions = np.concatenate(inferences).tolist()
         predictions = [self.states[x] for x in predictions]
         state = [self.states[x] for x in state]
@@ -394,7 +404,7 @@ class ModelManager(object):
 
     def inference(self):
         # TODO: Make it use dynamic annotation file, handle one without state and crop mode
-        print('Running inference')
+        self.log('Running inference')
 
         with open(self.dataset_dir + 'annotations.txt') as f:
             annotations = f.readlines()
@@ -404,10 +414,10 @@ class ModelManager(object):
         depth_path = depth_path[3:]
         state = self.states.index(state)
 
-        print('State is %d' % state)
+        self.log('State is %d' % state)
 
         self.dataset_init([rgb_path], [depth_path], [state])
         inference, acc = self.sess.run([self.inference_op, self.inference_acc_op],
                                        feed_dict={self.lr_ph: 0, self.training_ph: False})
-        print('Inference: ' + str(inference))
-        print('Accuracy: %.4f' % acc)
+        self.log('Inference: ' + str(inference))
+        self.log('Accuracy: %.4f' % acc)
